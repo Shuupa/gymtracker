@@ -370,6 +370,10 @@ class _ProgramGeneratorScreenState
     final program = _program;
     if (program == null) return;
     final current = program.days[dayIndex].exercises[exerciseIndex];
+    final idsAlreadyInDay = <int>{
+      for (var i = 0; i < program.days[dayIndex].exercises.length; i++)
+        if (i != exerciseIndex) program.days[dayIndex].exercises[i].exerciseId,
+    };
     final db = ref.read(dbProvider);
     final links = await db.exerciseMuscleLinks();
     final byExercise = <int, List<MuscleLink>>{};
@@ -385,6 +389,7 @@ class _ProgramGeneratorScreenState
 
     final candidates = allExercises.where((exercise) {
       if (exercise.id == current.exerciseId ||
+          idsAlreadyInDay.contains(exercise.id) ||
           _excludedExerciseIds.contains(exercise.id) ||
           !_equipment.contains(exercise.equipment))
         return false;
@@ -468,6 +473,14 @@ class _ProgramGeneratorScreenState
       );
     }
     if (replacementId == null || !mounted) return;
+    if (idsAlreadyInDay.contains(replacementId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Это упражнение уже есть в этой тренировке.'),
+        ),
+      );
+      return;
+    }
     Exercise? replacement;
     for (final exercise in allExercises) {
       if (exercise.id == replacementId) {
@@ -550,70 +563,6 @@ class _ProgramGeneratorScreenState
       MaterialPageRoute(builder: (_) => WorkoutScreen(workoutId: workoutId)),
     );
     final updatedPrefs = await SharedPreferences.getInstance();
-    final missedFocuses =
-        (updatedPrefs.getStringList('programUnderperforming_$workoutId') ??
-                <String>[])
-            .toSet();
-    final currentProgram = _program;
-    if (currentProgram != null && missedFocuses.isNotEmpty) {
-      // Recovery-first adjustment: do not transfer missed sets to the next day.
-      // Reduce the next exposure for affected muscles by one set (minimum two),
-      // then continue the schedule normally.
-      final adjustedDays = <ProgramDay>[];
-      for (var i = 0; i < currentProgram.days.length; i++) {
-        final dayItem = currentProgram.days[i];
-        final exercises = <PrescribedExercise>[];
-        for (final exercise in dayItem.exercises) {
-          final shouldAdjust =
-              i > dayIndex && missedFocuses.contains(exercise.focus);
-          exercises.add(
-            PrescribedExercise(
-              exerciseId: exercise.exerciseId,
-              name: exercise.name,
-              equipment: exercise.equipment,
-              focus: exercise.focus,
-              sets: shouldAdjust
-                  ? (exercise.sets - 1).clamp(2, exercise.sets).toInt()
-                  : exercise.sets,
-              repMin: exercise.repMin,
-              repMax: exercise.repMax,
-              restSeconds: exercise.restSeconds,
-              reason: shouldAdjust
-                  ? 'Объём временно снижен для восстановления после незавершённой тренировки'
-                  : exercise.reason,
-            ),
-          );
-        }
-        adjustedDays.add(
-          ProgramDay(title: dayItem.title, exercises: exercises),
-        );
-      }
-      final adjustedProgram = GeneratedProgram(
-        options: currentProgram.options,
-        days: adjustedDays,
-        priorities: currentProgram.priorities,
-        warnings: [
-          ...currentProgram.warnings,
-          'После незавершённой тренировки объём затронутых групп снижен на следующем занятии. Пропущенные подходы не переносятся на один день.',
-        ],
-        plannedWeeklySets: currentProgram.plannedWeeklySets,
-      );
-      await updatedPrefs.setString(
-        'savedTrainingProgram',
-        jsonEncode(_programToMap(adjustedProgram)),
-      );
-      await updatedPrefs.remove('programUnderperforming_$workoutId');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Тренировка выполнена не полностью: объём на следующем занятии скорректирован без добавления пропущенных подходов.',
-            ),
-          ),
-        );
-      }
-      if (mounted) setState(() => _program = adjustedProgram);
-    }
     if (!mounted) return;
     setState(() {
       _completedDays =

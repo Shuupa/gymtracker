@@ -74,6 +74,9 @@ class Session {
   final List<SetData> sets;
   Session(this.date, this.sets);
 
+  /// Logged volume (entered weight × reps). For bodyweight exercises where
+  /// weight is left at zero this is zero; use [effectiveVolume] when comparing
+  /// estimated mechanical work across bodyweight and loaded exercises.
   double get volume =>
       sets.fold(0.0, (sum, set) => sum + set.weight * set.reps);
   double get topWeight => sets.fold(

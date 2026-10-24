@@ -300,26 +300,26 @@ GeneratedProgram generateProgram({
     }
 
     if (dayExercises.isNotEmpty) {
-      // Put demanding multi-joint work for large muscle groups first, then
-      // large-group isolation, then smaller groups. This limits pre-fatigue
-      // before the lifts that need the most coordination and force.
-      int orderRank(PrescribedExercise exercise) {
-        final exerciseLinks =
-            linksByExercise[exercise.exerciseId] ?? const <MuscleLink>[];
-        final compound =
-            exerciseLinks.where((link) => link.share >= 0.15).length >= 2;
-        final large = _isLargeGroup(exercise.focus);
-        if (large && compound) return 0;
-        if (large) return 1;
-        if (compound) return 2;
-        return 3;
-      }
-
+      // Selection is deficit-driven; sort the final session so compound work
+      // and large muscle groups are performed before smaller isolation work.
       dayExercises.sort((a, b) {
-        final rank = orderRank(a).compareTo(orderRank(b));
-        if (rank != 0) return rank;
-        // Stable ordering for predictable programs.
-        return a.exerciseId.compareTo(b.exerciseId);
+        final aLinks = linksByExercise[a.exerciseId] ?? const <MuscleLink>[];
+        final bLinks = linksByExercise[b.exerciseId] ?? const <MuscleLink>[];
+        final aCompound =
+            aLinks.where((link) => link.share >= 0.15).length >= 2;
+        final bCompound =
+            bLinks.where((link) => link.share >= 0.15).length >= 2;
+        if (aCompound != bCompound) return aCompound ? -1 : 1;
+        final aLarge = _isLargeGroup(a.focus);
+        final bLarge = _isLargeGroup(b.focus);
+        if (aLarge != bLarge) return aLarge ? -1 : 1;
+        final aShare = aLinks
+            .where((link) => link.muscle == a.focus)
+            .fold<double>(0, (sum, link) => sum + link.share);
+        final bShare = bLinks
+            .where((link) => link.muscle == b.focus)
+            .fold<double>(0, (sum, link) => sum + link.share);
+        return bShare.compareTo(aShare);
       });
       days.add(
         ProgramDay(
@@ -392,7 +392,7 @@ double _setCredit(double share) {
 (int, int, int) _prescription(ProgramGoal goal, bool compound) {
   return switch (goal) {
     ProgramGoal.strength => compound ? (4, 6, 180) : (6, 10, 120),
-    ProgramGoal.hypertrophy => compound ? (6, 10, 180) : (10, 15, 120),
-    ProgramGoal.general => compound ? (8, 12, 150) : (10, 15, 90),
+    ProgramGoal.hypertrophy => compound ? (6, 10, 150) : (10, 15, 90),
+    ProgramGoal.general => compound ? (8, 12, 120) : (10, 15, 90),
   };
 }

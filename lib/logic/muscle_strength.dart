@@ -35,13 +35,10 @@ double setScore(
 }) {
   if (reps <= 0) return 0;
   if (std.repBased) {
-    // Для обычных подходов оцениваем число повторений по нормативу.
-    // Если введена общая нагрузка, корректируем её относительно массы тела;
-    // не прибавляем массу тела повторно к уже полной нагрузке.
-    final effectiveReps = weight > 0 && bodyWeight > 0
-        ? reps * (weight / bodyWeight)
-        : reps.toDouble();
-    return std.score(effectiveReps, isMale);
+    // Rep-based norms are defined by completed repetitions. Do not scale
+    // repetitions by weight/body-weight: that makes the score collapse for
+    // normal external loads (e.g. 40 kg at 80 kg body weight).
+    return std.score(reps.toDouble(), isMale);
   }
   final load = effectiveExerciseLoad(
     exerciseName: exerciseName,

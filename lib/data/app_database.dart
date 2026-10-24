@@ -62,6 +62,13 @@ class AppDatabase extends _$AppDatabase {
     await (delete(workouts)..where((w) => w.id.equals(id))).go();
   });
 
+  Future<Set<int>> workoutExerciseIds(int workoutId) async =>
+      (await (select(
+            workoutExercises,
+          )..where((e) => e.workoutId.equals(workoutId))).get())
+          .map((row) => row.exerciseId)
+          .toSet();
+
   Stream<List<({WorkoutExercise we, Exercise ex})>> watchWorkoutExercises(
     int workoutId,
   ) {
@@ -161,12 +168,6 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteSet(int id) =>
       (delete(workoutSets)..where((s) => s.id.equals(id))).go();
-
-  /// Edit an already recorded set without deleting/recreating its history row.
-  Future<void> updateSet(int id, double weight, int reps) =>
-      (update(workoutSets)..where((s) => s.id.equals(id))).write(
-        WorkoutSetsCompanion(weight: Value(weight), reps: Value(reps)),
-      );
 
   /// Подходы из последней ЗАВЕРШЁННОЙ тренировки, где было это упражнение.
   Future<List<WorkoutSet>> lastSetsFor(

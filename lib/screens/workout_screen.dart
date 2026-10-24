@@ -36,58 +36,36 @@ class WorkoutScreen extends ConsumerWidget {
       await db.deleteWorkout(workoutId);
       return;
     }
-    // Compare actual non-warmup sets with the prescription before closing.
-    // A missed session is not made up by stacking extra work onto the next one.
-    final prefs = await SharedPreferences.getInstance();
-    final rawPrescription = prefs.getString('workoutPrescription_$workoutId');
-    final underperformedFocuses = <String>{};
-    if (rawPrescription != null) {
-      try {
-        final prescription =
-            jsonDecode(rawPrescription) as Map<String, dynamic>;
-        final prescribed =
-            prescription['exercises'] as Map<String, dynamic>? ?? {};
-        final workoutItems = await db.watchWorkoutExercises(workoutId).first;
-        for (final item in workoutItems) {
-          final target = prescribed[item.ex.id.toString()];
-          if (target is! Map) continue;
-          final expectedSets = (target['sets'] as num?)?.toInt() ?? 0;
-          final actualWorkSets = (await db.watchSets(item.we.id).first)
-              .where((set) => !set.isWarmup)
-              .toList();
-          final actualSets = actualWorkSets.length;
-          final repMin = (target['repMin'] as num?)?.toInt() ?? 0;
-          final averageReps = actualSets == 0
-              ? 0.0
-              : actualWorkSets.fold<int>(0, (sum, set) => sum + set.reps) /
-                    actualSets;
-          final materiallyBelowRepTarget =
-              repMin > 0 && actualSets > 0 && averageReps < repMin * 0.8;
-          if (expectedSets > 0 &&
-              (actualSets < (expectedSets * 0.75).ceil() ||
-                  materiallyBelowRepTarget)) {
-            final focus = target['focus'];
-            if (focus is String && focus.isNotEmpty)
-              underperformedFocuses.add(focus);
-          }
-        }
-        if (underperformedFocuses.isNotEmpty) {
-          await prefs.setStringList(
-            'programUnderperforming_$workoutId',
-            underperformedFocuses.toList(),
-          );
-        }
-      } catch (_) {
-        // Keep workout completion robust if old prescription metadata is malformed.
-      }
-    }
     await db.finishWorkout(workoutId);
+    final prefs = await SharedPreferences.getInstance();
     final programDayIndex = prefs.getInt('programDayIndex_$workoutId');
     if (programDayIndex != null) {
-      final completed =
-          (prefs.getStringList('programCompletedDays') ?? <String>[]).toSet();
-      completed.add(programDayIndex.toString());
-      await prefs.setStringList('programCompletedDays', completed.toList());
+      var allPrescribedExercisesPresent = true;
+      final rawPrescription = prefs.getString('workoutPrescription_$workoutId');
+      if (rawPrescription != null) {
+        try {
+          final decoded = jsonDecode(rawPrescription) as Map<String, dynamic>;
+          final prescribed = decoded['exercises'] as Map<String, dynamic>?;
+          if (prescribed != null && prescribed.isNotEmpty) {
+            final actualIds = await db.workoutExerciseIds(workoutId);
+            allPrescribedExercisesPresent = prescribed.keys
+                .map(int.tryParse)
+                .whereType<int>()
+                .every(actualIds.contains);
+          }
+        } catch (_) {
+          // Malformed optional metadata must not crash finishing a workout.
+        }
+      }
+      // A day with a deleted prescribed exercise remains incomplete. This
+      // prevents the generator from treating missed work as fully completed;
+      // it is not automatically crammed into the next workout.
+      if (allPrescribedExercisesPresent) {
+        final completed =
+            (prefs.getStringList('programCompletedDays') ?? <String>[]).toSet();
+        completed.add(programDayIndex.toString());
+        await prefs.setStringList('programCompletedDays', completed.toList());
+      }
     }
     if (!context.mounted) return;
     Navigator.pushReplacement(
@@ -311,56 +289,6 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
     _prefill(_warmup ? working : working + 1);
   }
 
-  Future<void> _editSet(WorkoutSet set) async {
-    final weightController = TextEditingController(text: fmtNum(set.weight));
-    final repsController = TextEditingController(text: set.reps.toString());
-    final result = await showDialog<({double weight, int reps})>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Исправить подход'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: weightController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Вес, кг'),
-            ),
-            TextField(
-              controller: repsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Повторы'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final weight = double.tryParse(
-                weightController.text.replaceAll(',', '.'),
-              );
-              final reps = int.tryParse(repsController.text);
-              if (weight == null || weight < 0 || reps == null || reps <= 0)
-                return;
-              Navigator.pop(dialogContext, (weight: weight, reps: reps));
-            },
-            child: const Text('Сохранить'),
-          ),
-        ],
-      ),
-    );
-    weightController.dispose();
-    repsController.dispose();
-    if (result == null) return;
-    await ref.read(dbProvider).updateSet(set.id, result.weight, result.reps);
-  }
-
   Future<void> _removeExercise(List<WorkoutSet> sets) async {
     final db = ref.read(dbProvider);
     if (sets.isNotEmpty) {
@@ -512,7 +440,6 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         exerciseName: widget.exercise.name,
                         equipment: widget.exercise.equipment,
                         bodyWeight: _bodyWeight,
-                        onTap: () => _editSet(s),
                       ),
                     ),
                 ],
@@ -587,14 +514,12 @@ class _SetRow extends StatelessWidget {
   final String exerciseName;
   final String equipment;
   final double bodyWeight;
-  final VoidCallback onTap;
   const _SetRow({
     required this.label,
     required this.set,
     required this.exerciseName,
     required this.equipment,
     required this.bodyWeight,
-    required this.onTap,
   });
 
   @override
@@ -606,48 +531,44 @@ class _SetRow extends StatelessWidget {
       enteredWeight: set.weight,
     );
     final est = set.isWarmup ? 0.0 : oneRm(load, set.reps);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: Pal.surface2,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 13,
-              backgroundColor: set.isWarmup
-                  ? Pal.cold.withValues(alpha: 0.5)
-                  : Pal.ember,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: set.isWarmup ? Pal.text : const Color(0xFF1A0A02),
-                ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Pal.surface2,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 13,
+            backgroundColor: set.isWarmup
+                ? Pal.cold.withValues(alpha: 0.5)
+                : Pal.ember,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: set.isWarmup ? Pal.text : const Color(0xFF1A0A02),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                equipment == 'bodyweight' && set.weight <= 0
-                    ? 'Собств. вес (~${fmtNum(load)} кг) × ${set.reps}'
-                    : '${fmtNum(set.weight)} кг × ${set.reps}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              equipment == 'bodyweight' && set.weight <= 0
+                  ? 'Собств. вес (~${fmtNum(load)} кг) × ${set.reps}'
+                  : '${fmtNum(set.weight)} кг × ${set.reps}',
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-            if (est > 0)
-              Text(
-                '≈ ${fmtNum((est * 10).round() / 10)}',
-                style: const TextStyle(color: Pal.dim, fontSize: 12),
-              ),
-          ],
-        ),
+          ),
+          if (est > 0)
+            Text(
+              '≈ ${fmtNum((est * 10).round() / 10)}',
+              style: const TextStyle(color: Pal.dim, fontSize: 12),
+            ),
+        ],
       ),
     );
   }
@@ -682,38 +603,23 @@ class _Stepper extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  style: const TextStyle(fontSize: 10, color: Pal.dim),
-                ),
+          child: TextField(
+            controller: controller,
+            textAlign: TextAlign.center,
+            keyboardType: decimal
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : TextInputType.number,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            decoration: InputDecoration(
+              labelText: label,
+              hintText: '0',
+              isDense: true,
+              floatingLabelAlignment: FloatingLabelAlignment.center,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 12,
               ),
-              TextField(
-                controller: controller,
-                textAlign: TextAlign.center,
-                keyboardType: decimal
-                    ? const TextInputType.numberWithOptions(decimal: true)
-                    : TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(width: 4),
