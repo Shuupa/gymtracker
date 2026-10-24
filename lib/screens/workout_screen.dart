@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'exercise_library_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,6 +103,18 @@ class WorkoutScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Как выполнять упражнения?',
+            icon: const Icon(Icons.help_outline_rounded, color: Pal.ember),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ExerciseLibraryScreen(),
+                ),
+              );
+            },
+          ),
           finished
               ? TextButton(
                   onPressed: () => Navigator.pushReplacement(

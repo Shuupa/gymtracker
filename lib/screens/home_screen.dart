@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'exercise_library_screen.dart';
 import 'program_generator_screen.dart';
 import '../format.dart';
 import '../logic/summaries.dart';
@@ -46,6 +47,18 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Обзор'),
         actions: [
+          IconButton(
+            tooltip: 'Библиотека упражнений',
+            icon: const Icon(Icons.menu_book_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ExerciseLibraryScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Генератор программы',
             icon: const Icon(Icons.auto_awesome_rounded),
