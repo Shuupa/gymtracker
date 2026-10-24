@@ -7,6 +7,7 @@ typedef MuscleLink = ({
   String muscle,
   int exerciseId,
   String exercise,
+  String equipment,
   double share,
 });
 
@@ -28,16 +29,24 @@ double setScore(
   double weight,
   int reps,
   double bodyWeight,
-  bool isMale,
-) {
+  bool isMale, {
+  String exerciseName = '',
+  String equipment = '',
+}) {
   if (reps <= 0) return 0;
   if (std.repBased) {
     final eff = reps * (1 + (bodyWeight > 0 ? weight / bodyWeight : 0.0));
     return std.score(eff, isMale);
   }
-  if (bodyWeight <= 0 || weight <= 0) return 0;
+  final load = effectiveExerciseLoad(
+    exerciseName: exerciseName,
+    equipment: equipment,
+    bodyWeight: bodyWeight,
+    enteredWeight: weight,
+  );
+  if (bodyWeight <= 0 || load <= 0) return 0;
   final r = reps > maxRepsForEstimate ? maxRepsForEstimate : reps;
-  return std.score(oneRm(weight, r) / bodyWeight, isMale);
+  return std.score(oneRm(load, r) / bodyWeight, isMale);
 }
 
 /// Сила мышцы = лучшее из упражнений, которые её нагружают.
@@ -60,7 +69,15 @@ Map<String, MuscleResult> muscleScores({
     final best = exScore.putIfAbsent(l.exerciseId, () {
       var b = 0.0;
       for (final s in list) {
-        final v = setScore(std, s.weight, s.reps, bodyWeight, isMale);
+        final v = setScore(
+          std,
+          s.weight,
+          s.reps,
+          bodyWeight,
+          isMale,
+          exerciseName: l.exercise,
+          equipment: l.equipment,
+        );
         if (v > b) b = v;
       }
       return b;

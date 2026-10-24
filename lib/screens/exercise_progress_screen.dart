@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/app_database.dart';
 import '../format.dart';
@@ -17,6 +18,19 @@ class ExerciseProgressScreen extends ConsumerStatefulWidget {
 
 class _State extends ConsumerState<ExerciseProgressScreen> {
   OneRmFormula _formula = OneRmFormula.average;
+  double _bodyWeight = 80;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBodyWeight();
+  }
+
+  Future<void> _loadBodyWeight() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _bodyWeight = prefs.getDouble('bodyWeight') ?? 80);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +48,16 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
               child: Text('Нет данных. Заверши тренировку с этим упражнением'),
             );
           }
-          final values = sessions.map((s) => s.best1rm(_formula)).toList();
+          final values = sessions
+              .map(
+                (s) => s.best1rm(
+                  _formula,
+                  bodyWeight: _bodyWeight,
+                  exerciseName: widget.exercise.name,
+                  equipment: widget.exercise.equipment,
+                ),
+              )
+              .toList();
           final spots = [
             for (var i = 0; i < values.length; i++)
               if (values[i] > 0) FlSpot(i.toDouble(), values[i]),
@@ -136,7 +159,9 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                         .map((e) => '${fmtNum(e.weight)}×${e.reps}')
                         .join(', '),
                   ),
-                  trailing: Text('объём ${fmtNum(_r(s.volume))}'),
+                  trailing: Text(
+                    'объём ${fmtNum(_r(s.effectiveVolume(bodyWeight: _bodyWeight, exerciseName: widget.exercise.name, equipment: widget.exercise.equipment)))}',
+                  ),
                 ),
             ],
           );

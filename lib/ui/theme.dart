@@ -1,40 +1,39 @@
 import 'package:flutter/material.dart';
 
+/// Winter Arc design system: obsidian, graphite, ice blue and restrained red.
 class Pal {
-  // Winter Arc — базовая палитра
   static const bg = Color(0xFF090C11);
   static const surface = Color(0xFF121720);
   static const surface2 = Color(0xFF1A2230);
+  static const surface3 = Color(0xFF202B3A);
   static const line = Color(0xFF293444);
 
   static const text = Color(0xFFEAF1F8);
   static const dim = Color(0xFF8998AA);
 
-  // Основной ледяной акцент
   static const ice = Color(0xFF9BD4FF);
-  static const ember = Color(0xFF80BEF5);
+  static const ember = Color(
+    0xFF80BEF5,
+  ); // Kept for compatibility with existing screens.
   static const cold = Color(0xFF426D9F);
-
-  // Предупреждения и высокие значения на карте мышц
   static const hot = Color(0xFFE56B75);
+  static const success = Color(0xFF82D6B0);
 }
 
 Color heatColor(double s) {
-  s = s.clamp(0.0, 1.0);
-
-  if (s < 0.5) {
-    return Color.lerp(Pal.cold, Pal.ice, s / 0.5)!;
+  final value = s.clamp(0.0, 1.0);
+  if (value < 0.5) {
+    return Color.lerp(Pal.cold, Pal.ice, value / 0.5)!;
   }
-
-  return Color.lerp(Pal.ice, Pal.hot, (s - 0.5) / 0.5)!;
+  return Color.lerp(Pal.ice, Pal.hot, (value - 0.5) / 0.5)!;
 }
 
 ThemeData buildTheme() {
   const scheme = ColorScheme.dark(
-    primary: Pal.ember,
+    primary: Pal.ice,
     onPrimary: Color(0xFF07111C),
-    secondary: Pal.ice,
-    onSecondary: Color(0xFF07111C),
+    secondary: Pal.cold,
+    onSecondary: Pal.text,
     surface: Pal.surface,
     onSurface: Pal.text,
     surfaceContainerHighest: Pal.surface2,
@@ -44,13 +43,26 @@ ThemeData buildTheme() {
   );
 
   final radius = BorderRadius.circular(16);
+  final shape = RoundedRectangleBorder(borderRadius: radius);
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: Pal.bg,
+    canvasColor: Pal.bg,
+    splashColor: Pal.ice.withValues(alpha: 0.06),
+    highlightColor: Pal.ice.withValues(alpha: 0.04),
+    dividerColor: Pal.line,
+    visualDensity: VisualDensity.standard,
 
     textTheme: const TextTheme(
+      displayLarge: TextStyle(
+        color: Pal.text,
+        fontSize: 34,
+        height: 1.05,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -1.2,
+      ),
       headlineLarge: TextStyle(
         color: Pal.text,
         fontSize: 30,
@@ -66,7 +78,7 @@ ThemeData buildTheme() {
       titleLarge: TextStyle(
         color: Pal.text,
         fontSize: 21,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.3,
       ),
       titleMedium: TextStyle(
@@ -74,12 +86,17 @@ ThemeData buildTheme() {
         fontSize: 16,
         fontWeight: FontWeight.w700,
       ),
+      titleSmall: TextStyle(
+        color: Pal.text,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
       bodyLarge: TextStyle(color: Pal.text, fontSize: 15, height: 1.4),
       bodyMedium: TextStyle(color: Pal.text, fontSize: 14, height: 1.4),
       bodySmall: TextStyle(color: Pal.dim, fontSize: 12, height: 1.35),
       labelLarge: TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         letterSpacing: 0.1,
       ),
     ),
@@ -90,6 +107,7 @@ ThemeData buildTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
+      surfaceTintColor: Colors.transparent,
       titleTextStyle: TextStyle(
         color: Pal.text,
         fontSize: 23,
@@ -102,6 +120,7 @@ ThemeData buildTheme() {
       color: Pal.surface,
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 5),
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
         side: const BorderSide(color: Pal.line, width: 1),
@@ -128,17 +147,22 @@ ThemeData buildTheme() {
         borderRadius: radius,
         borderSide: const BorderSide(color: Pal.hot),
       ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: Pal.hot, width: 1.4),
+      ),
       labelStyle: const TextStyle(color: Pal.dim),
       hintStyle: const TextStyle(color: Pal.dim),
       prefixIconColor: Pal.dim,
+      suffixIconColor: Pal.dim,
     ),
 
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: Pal.ice,
       foregroundColor: const Color(0xFF07111C),
-      elevation: 2,
-      highlightElevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 1,
+      highlightElevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
     ),
 
     filledButtonTheme: FilledButtonThemeData(
@@ -151,7 +175,6 @@ ThemeData buildTheme() {
         textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
       ),
     ),
-
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: Pal.ice,
@@ -160,14 +183,12 @@ ThemeData buildTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     ),
-
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: Pal.ice,
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
     ),
-
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(foregroundColor: Pal.ice),
     ),
@@ -183,7 +204,6 @@ ThemeData buildTheme() {
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
     ),
-
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: SegmentedButton.styleFrom(
         backgroundColor: Pal.surface2,
@@ -193,7 +213,6 @@ ThemeData buildTheme() {
         side: const BorderSide(color: Pal.line),
       ),
     ),
-
     dialogTheme: DialogThemeData(
       backgroundColor: Pal.surface,
       surfaceTintColor: Colors.transparent,
@@ -212,7 +231,6 @@ ThemeData buildTheme() {
         height: 1.45,
       ),
     ),
-
     snackBarTheme: SnackBarThemeData(
       backgroundColor: Pal.surface2,
       contentTextStyle: const TextStyle(color: Pal.text),
@@ -222,22 +240,32 @@ ThemeData buildTheme() {
         side: const BorderSide(color: Pal.line),
       ),
     ),
-
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: Pal.ice,
       linearTrackColor: Pal.line,
     ),
-
     dividerTheme: const DividerThemeData(
       color: Pal.line,
       thickness: 1,
       space: 1,
     ),
-
     listTileTheme: const ListTileThemeData(
       iconColor: Pal.ice,
       textColor: Pal.text,
       contentPadding: EdgeInsets.symmetric(horizontal: 16),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: Pal.surface2,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: Pal.line),
+      ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Pal.surface,
+      surfaceTintColor: Colors.transparent,
+      showDragHandle: true,
     ),
   );
 }

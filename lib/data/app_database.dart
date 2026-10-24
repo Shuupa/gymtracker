@@ -120,6 +120,7 @@ class AppDatabase extends _$AppDatabase {
             muscle: r.readTable(muscles).name,
             exerciseId: r.readTable(exercises).id,
             exercise: r.readTable(exercises).name,
+            equipment: r.readTable(exercises).equipment,
             share: r.readTable(exerciseMuscles).share,
           ),
         )

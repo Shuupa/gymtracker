@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'exercise_picker_screen.dart';
 import '../data/app_database.dart';
 import '../format.dart';
 import '../logic/one_rm.dart';
@@ -41,15 +41,69 @@ class WorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickExercise(BuildContext context, WidgetRef ref) async {
-    final exerciseId = await Navigator.push<int>(
-      context,
-      MaterialPageRoute(builder: (_) => const ExercisePickerScreen()),
+  Future<void> _pickExercise(BuildContext context, WidgetRef ref) {
+    final db = ref.read(dbProvider);
+    var query = '';
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Pal.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.8,
+          child: Consumer(
+            builder: (_, ref, __) {
+              final all = ref.watch(exercisesProvider).value ?? [];
+              return StatefulBuilder(
+                builder: (_, setSt) {
+                  final list = all
+                      .where(
+                        (e) =>
+                            e.name.toLowerCase().contains(query.toLowerCase()),
+                      )
+                      .toList();
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: TextField(
+                          autofocus: true,
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.search),
+                            hintText: 'Поиск упражнения',
+                          ),
+                          onChanged: (v) => setSt(() => query = v),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: list.length,
+                          itemBuilder: (_, i) => ListTile(
+                            title: Text(list[i].name),
+                            subtitle: Text(
+                              equipmentRu(list[i].equipment),
+                              style: const TextStyle(color: Pal.dim),
+                            ),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              db.addExerciseToWorkout(workoutId, list[i].id);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
     );
-
-    if (exerciseId == null || !context.mounted) return;
-
-    await ref.read(dbProvider).addExerciseToWorkout(workoutId, exerciseId);
   }
 
   @override
@@ -179,6 +233,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
   final _reps = TextEditingController();
   List<WorkoutSet> _last = [];
   bool _warmup = false;
+  double _bodyWeight = 80;
 
   double get _step => switch (widget.exercise.equipment) {
     'barbell' => 2.5,
@@ -191,6 +246,13 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
   void initState() {
     super.initState();
     _loadLast();
+    _loadBodyWeight();
+  }
+
+  Future<void> _loadBodyWeight() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _bodyWeight = prefs.getDouble('bodyWeight') ?? 80);
   }
 
   @override
@@ -353,7 +415,13 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                           size: 20,
                         ),
                       ),
-                      child: _SetRow(label: labels[s.id]!, set: s),
+                      child: _SetRow(
+                        label: labels[s.id]!,
+                        set: s,
+                        exerciseName: widget.exercise.name,
+                        equipment: widget.exercise.equipment,
+                        bodyWeight: _bodyWeight,
+                      ),
                     ),
                 ],
               ),
@@ -365,7 +433,9 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 children: [
                   Expanded(
                     child: _Stepper(
-                      label: 'Вес, кг',
+                      label: widget.exercise.equipment == 'bodyweight'
+                          ? 'Общая нагрузка, кг'
+                          : 'Вес, кг',
                       controller: _weight,
                       decimal: true,
                       onMinus: () => _bump(_weight, -_step),
@@ -422,11 +492,26 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
 class _SetRow extends StatelessWidget {
   final String label;
   final WorkoutSet set;
-  const _SetRow({required this.label, required this.set});
+  final String exerciseName;
+  final String equipment;
+  final double bodyWeight;
+  const _SetRow({
+    required this.label,
+    required this.set,
+    required this.exerciseName,
+    required this.equipment,
+    required this.bodyWeight,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final est = set.isWarmup ? 0.0 : oneRm(set.weight, set.reps);
+    final load = effectiveExerciseLoad(
+      exerciseName: exerciseName,
+      equipment: equipment,
+      bodyWeight: bodyWeight,
+      enteredWeight: set.weight,
+    );
+    final est = set.isWarmup ? 0.0 : oneRm(load, set.reps);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -453,7 +538,9 @@ class _SetRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '${fmtNum(set.weight)} кг × ${set.reps}',
+              equipment == 'bodyweight' && set.weight <= 0
+                  ? 'Собств. вес (~${fmtNum(load)} кг) × ${set.reps}'
+                  : '${fmtNum(set.weight)} кг × ${set.reps}',
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
