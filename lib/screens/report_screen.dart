@@ -82,18 +82,25 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     final sel = _selected;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         Text(
           fmtDay(w.startedAt),
           style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w800),
+              ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.6),
         ),
-        Text(
-          '${fmtTime(w.startedAt)} · ${fmtDuration(r.duration)}',
-          style: const TextStyle(color: Pal.dim),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            const Icon(Icons.access_time_rounded, size: 13, color: Pal.dim),
+            const SizedBox(width: 5),
+            Text(
+              '${fmtTime(w.startedAt)} · ${fmtDuration(r.duration)}',
+              style: const TextStyle(color: Pal.dim, fontSize: 12),
+            ),
+          ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Row(
           children: [
             StatTile('${r.exercises.length}', 'упражнений'),
@@ -121,54 +128,99 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             ),
           )
         else ...[
-          BodyMap(
-            colors: colors,
-            onMuscleTap: (m) => setState(() => _selected = m),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              sel == null
-                  ? 'Нажми на мышцу'
-                  : (load[sel] == null
-                        ? '$sel: не работала'
-                        : '$sel: ${load[sel]!.toStringAsFixed(1)} эфф. подх.'),
-              style: const TextStyle(fontWeight: FontWeight.w700),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Pal.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Pal.line),
+            ),
+            child: BodyMap(
+              colors: colors,
+              onMuscleTap: (m) => setState(() => _selected = m),
             ),
           ),
-          const SizedBox(height: 10),
-          _HeatBar(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
+          Center(
+            child: sel == null
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.touch_app_outlined, size: 14, color: Pal.dim),
+                      SizedBox(width: 6),
+                      Text(
+                        'Нажми на мышцу',
+                        style: TextStyle(
+                          color: Pal.dim,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  )
+                : Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Pal.surface2,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Pal.line),
+                    ),
+                    child: Text(
+                      load[sel] == null
+                          ? '$sel: не работала'
+                          : '$sel · ${load[sel]!.toStringAsFixed(1)} эфф. подходов',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 12),
+          const _HeatBar(),
+          const SizedBox(height: 16),
           for (final e in ranking)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: 5),
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 120,
+                  Expanded(
+                    flex: 4,
                     child: Text(
                       e.key,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
+                  const SizedBox(width: 10),
                   Expanded(
+                    flex: 5,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: maxLoad == 0 ? 0 : e.value / maxLoad,
-                        minHeight: 8,
+                        minHeight: 7,
                         backgroundColor: Pal.surface2,
                         color: colors[e.key],
                       ),
                     ),
                   ),
+                  const SizedBox(width: 10),
                   SizedBox(
-                    width: 44,
+                    width: 30,
                     child: Text(
                       e.value.toStringAsFixed(1),
                       textAlign: TextAlign.right,
-                      style: const TextStyle(color: Pal.dim),
+                      style: const TextStyle(
+                        color: Pal.dim,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
                 ],
@@ -177,62 +229,99 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         ],
         const SectionTitle('Упражнения'),
         for (final ex in r.exercises)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          ex.exercise.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF161F2E), Color(0xFF0C121C)],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Pal.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ex.exercise.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      if (ex.best1rm > 0)
-                        Text(
+                    ),
+                    if (ex.best1rm > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Pal.hot.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Pal.hot.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
                           '1RM ≈ ${fmtNum((ex.best1rm * 10).round() / 10)}',
                           style: const TextStyle(
                             color: Pal.hot,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final s in ex.sets)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Pal.surface2,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Pal.line),
+                        ),
+                        child: Text(
+                          '${fmtNum(s.weight)}×${s.reps}',
+                          style: const TextStyle(
                             fontWeight: FontWeight.w700,
+                            fontSize: 12,
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final s in ex.sets)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Pal.surface2,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${fmtNum(s.weight)}×${s.reps}',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Тоннаж: ${fmtVolume(ex.volume)}',
-                    style: const TextStyle(color: Pal.dim, fontSize: 12),
-                  ),
-                ],
-              ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.fitness_center_rounded,
+                      size: 12,
+                      color: Pal.dim,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Тоннаж: ${fmtVolume(ex.volume)}',
+                      style: const TextStyle(color: Pal.dim, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
       ],
@@ -241,6 +330,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
 }
 
 class _HeatBar extends StatelessWidget {
+  const _HeatBar();
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -260,9 +350,9 @@ class _HeatBar extends StatelessWidget {
           children: [
             Text(
               'меньше нагрузки',
-              style: TextStyle(color: Pal.dim, fontSize: 11),
+              style: TextStyle(color: Pal.dim, fontSize: 10),
             ),
-            Text('больше', style: TextStyle(color: Pal.dim, fontSize: 11)),
+            Text('больше', style: TextStyle(color: Pal.dim, fontSize: 10)),
           ],
         ),
       ],

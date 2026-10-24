@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'body_map.dart';
 import 'theme.dart';
 
-/// Маленькое изображение тела с подсвеченными мышцами. Показывает только
-/// одну сторону (спереди или сзади) и приближает нужную область [crop]
-/// (координаты одного тела 200x440).
 class MiniBody extends StatelessWidget {
   final Set<String> highlight;
   final bool back;
@@ -47,22 +44,26 @@ class _MiniPainter extends CustomPainter {
       ..isAntiAlias = true;
     final line = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3 / s
+      ..strokeWidth = 1.5 / s
       ..strokeJoin = StrokeJoin.round
       ..isAntiAlias = true;
 
-    // сначала обычные части, потом подсвеченные, чтобы их обводка была сверху
     for (final pass in [false, true]) {
       for (final sh in bodyShapes) {
         if (sh.view != view) continue;
         final hl = sh.muscle != null && highlight.contains(sh.muscle);
         if (hl != pass) continue;
-        fill.color = hl
-            ? Pal.ember
-            : (sh.muscle == null
-                  ? const Color(0xFF111823)
-                  : const Color(0xFF1B2433));
-        line.color = hl ? Pal.hot : const Color(0xFF3A4A60);
+
+        if (hl) {
+          fill.color = Pal.ice.withValues(alpha: 0.9);
+          line.color = Pal.ice;
+        } else {
+          fill.color = sh.muscle == null
+              ? const Color(0xFF0A0E14)
+              : const Color(0xFF161E29);
+          line.color = const Color(0xFF2E3D52);
+        }
+
         canvas.drawPath(sh.path, fill);
         canvas.drawPath(sh.path, line);
       }

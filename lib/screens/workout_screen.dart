@@ -55,13 +55,8 @@ class WorkoutScreen extends ConsumerWidget {
                 .whereType<int>()
                 .every(actualIds.contains);
           }
-        } catch (_) {
-          // Malformed optional metadata must not crash finishing a workout.
-        }
+        } catch (_) {}
       }
-      // A day with a deleted prescribed exercise remains incomplete. This
-      // prevents the generator from treating missed work as fully completed;
-      // it is not automatically crammed into the next workout.
       if (allPrescribedExercisesPresent) {
         final completed =
             (prefs.getStringList('programCompletedDays') ?? <String>[]).toSet();
@@ -142,13 +137,30 @@ class WorkoutScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.fitness_center, size: 48, color: Pal.cold),
-                    const SizedBox(height: 12),
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Pal.surface2,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Pal.line),
+                      ),
+                      child: const Icon(
+                        Icons.fitness_center,
+                        size: 32,
+                        color: Pal.ice,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
                     const Text(
                       'Добавь первое упражнение',
-                      style: TextStyle(color: Pal.dim),
+                      style: TextStyle(
+                        color: Pal.text,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     FilledButton.icon(
                       onPressed: () => _pickExercise(context, ref),
                       icon: const Icon(Icons.add),
@@ -158,7 +170,7 @@ class WorkoutScreen extends ConsumerWidget {
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
                 children: [
                   for (final it in list)
                     ExerciseCard(
@@ -253,9 +265,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
       final entry = all?[widget.exercise.id.toString()];
       if (!mounted || entry is! Map) return;
       setState(() => _prescription = Map<String, dynamic>.from(entry));
-    } catch (_) {
-      // Ignore stale or malformed optional program metadata.
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadBodyWeight() async {
@@ -281,7 +291,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
   }
 
   void _prefill(int index) {
-    if (index >= _last.length) return; // иначе оставляем то, что введено
+    if (index >= _last.length) return;
     final s = _last[index];
     _weight.text = fmtNum(s.weight);
     _reps.text = s.reps.toString();
@@ -323,9 +333,19 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
     var n = 0;
     final labels = {for (final s in sets) s.id: s.isWarmup ? 'Р' : '${++n}'};
 
-    return Card(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF161F2E), Color(0xFF0C121C)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Pal.line),
+      ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 8, 14),
+        padding: const EdgeInsets.fromLTRB(14, 12, 8, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -334,8 +354,11 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 Expanded(
                   child: Text(
                     widget.exercise.name,
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
                 PopupMenuButton<String>(
@@ -367,23 +390,37 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
               const SizedBox(height: 4),
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.only(right: 6, bottom: 8),
+                margin: const EdgeInsets.only(right: 6, bottom: 10),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0x1F49D18D),
+                  color: Pal.success.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0x5549D18D)),
-                ),
-                child: Text(
-                  'По программе: ${_prescription!['sets']} × ${_prescription!['repMin']}–${_prescription!['repMax']} повторений · отдых ${_prescription!['restSeconds']} сек',
-                  style: const TextStyle(
-                    color: Color(0xFF49D18D),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                  border: Border.all(
+                    color: Pal.success.withValues(alpha: 0.35),
                   ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.checklist_rounded,
+                      size: 14,
+                      color: Pal.success,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'По программе: ${_prescription!['sets']} × ${_prescription!['repMin']}–${_prescription!['repMax']} · отдых ${_prescription!['restSeconds']} с',
+                        style: const TextStyle(
+                          color: Pal.success,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -392,7 +429,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
               child: _last.isEmpty
                   ? const Text(
                       'Раньше не делал',
-                      style: TextStyle(color: Pal.dim, fontSize: 13),
+                      style: TextStyle(color: Pal.dim, fontSize: 12),
                     )
                   : Wrap(
                       spacing: 6,
@@ -401,7 +438,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                       children: [
                         const Text(
                           'Прошлый раз',
-                          style: TextStyle(color: Pal.dim, fontSize: 13),
+                          style: TextStyle(color: Pal.dim, fontSize: 12),
                         ),
                         for (final s in _last)
                           Container(
@@ -416,15 +453,16 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                             child: Text(
                               '${fmtNum(s.weight)}×${s.reps}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: Pal.ice,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                       ],
                     ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: Column(
@@ -439,7 +477,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         padding: const EdgeInsets.only(right: 16),
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade800,
+                          color: Pal.hot.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -459,7 +497,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: Row(
@@ -488,7 +526,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: Row(
@@ -505,7 +543,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         minimumSize: const Size(0, 46),
                       ),
                       onPressed: () => _add(sets),
-                      icon: const Icon(Icons.check),
+                      icon: const Icon(Icons.check, size: 18),
                       label: Text(
                         _warmup ? 'Записать разминку' : 'Записать подход',
                         style: const TextStyle(fontWeight: FontWeight.w800),
@@ -554,17 +592,20 @@ class _SetRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 13,
-            backgroundColor: set.isWarmup
-                ? Pal.cold.withValues(alpha: 0.5)
-                : Pal.ember,
+          Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: set.isWarmup ? Pal.cold.withValues(alpha: 0.5) : Pal.ice,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Text(
               label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: set.isWarmup ? Pal.text : const Color(0xFF1A0A02),
+                color: set.isWarmup ? Pal.text : const Color(0xFF07111C),
               ),
             ),
           ),
@@ -574,13 +615,13 @@ class _SetRow extends StatelessWidget {
               equipment == 'bodyweight' && set.weight <= 0
                   ? 'Собств. вес (~${fmtNum(load)} кг) × ${set.reps}'
                   : '${fmtNum(set.weight)} кг × ${set.reps}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
           if (est > 0)
             Text(
               '≈ ${fmtNum((est * 10).round() / 10)}',
-              style: const TextStyle(color: Pal.dim, fontSize: 12),
+              style: const TextStyle(color: Pal.dim, fontSize: 11),
             ),
         ],
       ),
@@ -605,12 +646,14 @@ class _Stepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final btn = IconButton.styleFrom(
-      minimumSize: const Size(34, 34),
+      minimumSize: const Size(36, 36),
       padding: EdgeInsets.zero,
+      backgroundColor: Pal.surface2,
+      foregroundColor: Pal.ice,
     );
     return Row(
       children: [
-        IconButton.filledTonal(
+        IconButton(
           style: btn,
           onPressed: onMinus,
           icon: const Icon(Icons.remove, size: 18),
@@ -623,7 +666,7 @@ class _Stepper extends StatelessWidget {
             keyboardType: decimal
                 ? const TextInputType.numberWithOptions(decimal: true)
                 : TextInputType.number,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             decoration: InputDecoration(
               labelText: label,
               hintText: '0',
@@ -637,7 +680,7 @@ class _Stepper extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        IconButton.filledTonal(
+        IconButton(
           style: btn,
           onPressed: onPlus,
           icon: const Icon(Icons.add, size: 18),

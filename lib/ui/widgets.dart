@@ -33,7 +33,7 @@ Future<bool> confirmDialog(
   return result ?? false;
 }
 
-/// A metric tile designed to be placed inside a Row.
+/// Метрический тайл. Красивее за счёт мягкого градиента и более чистой иерархии.
 class StatTile extends StatelessWidget {
   final String value;
   final String label;
@@ -47,12 +47,16 @@ class StatTile extends StatelessWidget {
     final color = accent ?? Pal.ice;
     return Expanded(
       child: Container(
-        constraints: const BoxConstraints(minHeight: 78),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        constraints: const BoxConstraints(minHeight: 82),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Pal.surface2,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Pal.line.withValues(alpha: 0.85)),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A2435), Color(0xFF101822)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Pal.line.withValues(alpha: 0.9)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +64,7 @@ class StatTile extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Icon(icon, size: 16, color: color),
-              const SizedBox(height: 7),
+              const SizedBox(height: 8),
             ],
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -71,16 +75,22 @@ class StatTile extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Pal.text,
                   fontWeight: FontWeight.w800,
+                  fontSize: 19,
+                  letterSpacing: -0.4,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Pal.dim, fontSize: 11.5),
+              style: const TextStyle(
+                color: Pal.dim,
+                fontSize: 11.5,
+                letterSpacing: 0.2,
+              ),
             ),
           ],
         ),
@@ -99,9 +109,16 @@ class Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
+        color: color.withValues(alpha: 0.14),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
         borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.12),
+            blurRadius: 8,
+            spreadRadius: 0.5,
+          ),
+        ],
       ),
       child: Text(
         text,
@@ -131,7 +148,7 @@ class SectionTitle extends StatelessWidget {
             style: const TextStyle(
               color: Pal.dim,
               fontSize: 11,
-              letterSpacing: 1.5,
+              letterSpacing: 1.6,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -143,12 +160,13 @@ class SectionTitle extends StatelessWidget {
   );
 }
 
-/// A reusable dark panel for future screen-level refinements.
+/// Премиальная панель с мягким градиентом и опциональной подсветкой.
 class ArcPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? accent;
   final VoidCallback? onTap;
+  final bool gradient;
 
   const ArcPanel({
     super.key,
@@ -156,6 +174,7 @@ class ArcPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.accent,
     this.onTap,
+    this.gradient = false,
   });
 
   @override
@@ -163,9 +182,19 @@ class ArcPanel extends StatelessWidget {
     final content = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Pal.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent?.withValues(alpha: 0.45) ?? Pal.line),
+        gradient: gradient
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A2435), Color(0xFF0E1420)],
+              )
+            : null,
+        color: gradient ? null : Pal.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: accent?.withValues(alpha: 0.5) ?? Pal.line,
+          width: 1,
+        ),
       ),
       child: child,
     );
@@ -174,7 +203,7 @@ class ArcPanel extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: content,
       ),
     );
@@ -203,14 +232,25 @@ class EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 68,
-            height: 68,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              color: Pal.surface2,
-              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A2435), Color(0xFF0E1420)],
+              ),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Pal.line),
+              boxShadow: [
+                BoxShadow(
+                  color: Pal.ice.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-            child: Icon(icon, size: 30, color: Pal.ice),
+            child: Icon(icon, size: 32, color: Pal.ice),
           ),
           const SizedBox(height: 18),
           Text(

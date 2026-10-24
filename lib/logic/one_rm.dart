@@ -40,7 +40,7 @@ double effectiveExerciseLoad({
   if (bodyWeight <= 0) return 0;
   final coefficient = bodyweightCoefficient(exerciseName);
   if (coefficient <= 0) return 0;
-  if (enteredWeight > 0) return enteredWeight;
+  if (enteredWeight > 0) return bodyWeight * coefficient + enteredWeight;
   return bodyWeight * coefficient;
 }
 

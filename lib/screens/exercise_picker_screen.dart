@@ -38,8 +38,6 @@ final catalogProvider = FutureProvider.autoDispose<List<CatalogItem>>((
   ];
 });
 
-/// Выбор упражнения: сначала карточки групп мышц, затем список упражнений.
-/// Возвращает id выбранного упражнения через Navigator.pop(context, id).
 class ExercisePickerScreen extends ConsumerStatefulWidget {
   const ExercisePickerScreen({super.key});
 
@@ -80,19 +78,19 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => canPop ? Navigator.pop(context) : _back(),
           ),
-          title: Text(_group?.name ?? 'Упражнение'),
+          title: Text(_group?.name ?? 'Выбор упражнения'),
         ),
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               child: TextField(
                 controller: _search,
                 decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search_rounded),
                   hintText: 'Поиск по всем упражнениям',
                 ),
                 onChanged: (value) => setState(() => _query = value.trim()),
@@ -154,18 +152,56 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 0.8,
+      childAspectRatio: 0.78,
       children: [
         for (final group in muscleGroups)
-          _GroupTile(
-            group: group,
-            count: items
-                .where(
-                  (item) =>
-                      primaryMuscleGroup(item.shareMap)?.name == group.name,
-                )
-                .length,
-            onTap: () => setState(() => _group = group),
+          Material(
+            color: Pal.surface,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => setState(() => _group = group),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Pal.line),
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Center(
+                          // СНОВА ТВОЙ РОДНОЙ MINIBODY (КАК НА ФОТО 1)
+                          child: MiniBody(
+                            highlight: group.muscles.toSet(),
+                            back: group.back,
+                            crop: group.crop,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        group.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${items.where((item) => primaryMuscleGroup(item.shareMap)?.name == group.name).length} упр.',
+                      style: const TextStyle(color: Pal.dim, fontSize: 11),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ),
           ),
       ],
     );
@@ -174,29 +210,94 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
   Widget _list(List<CatalogItem> items, MuscleGroup? group) {
     if (items.isEmpty) {
       return const Center(
-        child: Text('Ничего не найдено', style: TextStyle(color: Pal.dim)),
+        child: Text(
+          'Ничего не найдено',
+          style: TextStyle(color: Pal.dim, fontSize: 16),
+        ),
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (_, index) {
         final item = items[index];
-        return ListTile(
-          title: Text(
-            item.exercise.name,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+        final primary = primaryMuscleGroup(item.shareMap);
+        final back = primary?.back ?? false;
+        final crop = primary?.crop ?? const Rect.fromLTWH(0, 0, 200, 440);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: Pal.surface,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: () => Navigator.pop(context, item.exercise.id),
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Pal.line),
+                ),
+                child: Row(
+                  children: [
+                    // И ТУТ ТОЖЕ MINIBODY ВМЕСТО ПАЛОЧЕК
+                    Container(
+                      width: 65,
+                      height: 85,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: MiniBody(
+                        highlight: item.shareMap.keys.toSet(),
+                        back: back,
+                        crop: crop,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.exercise.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Pal.ice.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              equipmentRu(item.exercise.equipment),
+                              style: const TextStyle(
+                                color: Pal.ice,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _MuscleShares(item: item, group: group),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: _MuscleShares(item: item, group: group),
-          ),
-          trailing: Text(
-            equipmentRu(item.exercise.equipment),
-            style: const TextStyle(color: Pal.dim, fontSize: 12),
-          ),
-          onTap: () => Navigator.pop(context, item.exercise.id),
         );
       },
     );
@@ -211,91 +312,36 @@ class _MuscleShares extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spans = <InlineSpan>[];
-    for (var index = 0; index < item.shares.length; index++) {
-      final entry = item.shares[index];
-      final highlighted = group != null && group!.muscles.contains(entry.key);
-      if (index > 0) {
-        spans.add(
-          const TextSpan(
-            text: '  ·  ',
-            style: TextStyle(color: Pal.line),
-          ),
-        );
-      }
-      spans.add(
-        TextSpan(
-          text: '${entry.key} ${(entry.value * 100).round()}%',
-          style: TextStyle(
-            color: highlighted ? Pal.ember : Pal.dim,
-            fontWeight: highlighted ? FontWeight.w800 : FontWeight.w500,
-          ),
-        ),
-      );
-    }
-    return Text.rich(
-      TextSpan(children: spans),
-      style: const TextStyle(fontSize: 12.5, height: 1.35),
-    );
-  }
-}
-
-class _GroupTile extends StatelessWidget {
-  final MuscleGroup group;
-  final int count;
-  final VoidCallback onTap;
-
-  const _GroupTile({
-    required this.group,
-    required this.count,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Pal.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Pal.line),
-          ),
-          child: Column(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Center(
-                    child: MiniBody(
-                      highlight: group.muscles.toSet(),
-                      back: group.back,
-                      crop: group.crop,
-                    ),
-                  ),
-                ),
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final entry in item.shares.take(3))
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: (group != null && group!.muscles.contains(entry.key))
+                  ? Pal.purple.withValues(alpha: 0.2)
+                  : Pal.surface2,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: (group != null && group!.muscles.contains(entry.key))
+                    ? Pal.purple.withValues(alpha: 0.5)
+                    : Colors.transparent,
               ),
-              Text(
-                group.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
+            ),
+            child: Text(
+              '${entry.key} ${(entry.value * 100).round()}%',
+              style: TextStyle(
+                color: (group != null && group!.muscles.contains(entry.key))
+                    ? Pal.purple
+                    : Pal.dimLight,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
               ),
-              Text(
-                '$count упр.',
-                style: const TextStyle(color: Pal.dim, fontSize: 11),
-              ),
-              const SizedBox(height: 8),
-            ],
+            ),
           ),
-        ),
-      ),
+      ],
     );
   }
 }

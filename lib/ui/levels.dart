@@ -5,11 +5,11 @@ import 'theme.dart';
 const levelNames = ['Слабый', 'Средний', 'Хороший', 'Отличный', 'Элита'];
 
 const levelColors = [
-  Color(0xFF7C9A86), // слабый: серовато-зелёный
-  Color(0xFF3FB950), // средний: зелёный
-  Color(0xFFFF9F1C), // хороший: оранжевый
-  Color(0xFFE5383B), // отличный: красный
-  Color(0xFFA855F7), // элита: фиолетовый
+  Color(0xFF6B7A8E), // слабый: спокойный серо-синий
+  Color(0xFF4ADE80), // средний: свежий зелёный
+  Color(0xFFFBBF24), // хороший: тёплый янтарь
+  Color(0xFFF97316), // отличный: яркий оранжевый
+  Color(0xFFB975FF), // элита: насыщенный фиолетовый
 ];
 
 int levelIndex(double s) =>
@@ -38,6 +38,13 @@ class LevelLegend extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: levelColors[i],
                   borderRadius: BorderRadius.circular(3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: levelColors[i].withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 5),

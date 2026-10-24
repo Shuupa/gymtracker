@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'exercise_picker_screen.dart';
 import '../data/exercise_descriptions.dart';
+import '../format.dart';
 import '../logic/muscle_groups.dart';
 import '../ui/mini_body.dart';
 import '../ui/theme.dart';
-import '../ui/widgets.dart';
-import 'exercise_picker_screen.dart'; // Берем существующий catalogProvider
+import 'exercise_picker_screen.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
@@ -15,32 +14,6 @@ class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<ExerciseLibraryScreen> createState() =>
       _ExerciseLibraryScreenState();
-}
-
-String equipmentRu(dynamic equipment) {
-  final name = equipment.toString().split('.').last.toLowerCase();
-  switch (name) {
-    case 'barbell':
-      return 'Штанга';
-    case 'dumbbell':
-      return 'Гантели';
-    case 'machine':
-      return 'Тренажёр';
-    case 'cable':
-      return 'Блок';
-    case 'bodyweight':
-      return 'Свой вес';
-    case 'kettlebell':
-      return 'Гиря';
-    case 'ezbar':
-      return 'EZ-гриф';
-    case 'smith':
-      return 'Смит';
-    case 'none':
-      return 'Без инвентаря';
-    default:
-      return 'Инвентарь';
-  }
 }
 
 class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
@@ -56,7 +29,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         actions: [
           if (_selectedGroup != null)
             IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(Icons.clear_rounded),
               onPressed: () => setState(() => _selectedGroup = null),
               tooltip: 'Сбросить фильтр',
             ),
@@ -66,7 +39,6 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Ошибка загрузки: $err')),
         data: (items) {
-          // Фильтрация по основной группе мышц (логика из muscle_groups.dart)
           final filtered =
               items.where((item) {
                   if (_selectedGroup == null) return true;
@@ -77,13 +49,13 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
           return Column(
             children: [
-              // Панель выбора групп мышц (чипсы)
+              // Панель фильтров
               SizedBox(
-                height: 56,
+                height: 60,
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 8,
+                    vertical: 10,
                   ),
                   scrollDirection: Axis.horizontal,
                   itemCount: muscleGroups.length,
@@ -94,31 +66,32 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                     return ChoiceChip(
                       label: Text(group.name),
                       selected: selected,
-                      onSelected: (_) {
-                        setState(() {
-                          _selectedGroup = selected ? null : group;
-                        });
-                      },
-                      selectedColor: Pal.ember.withOpacity(0.2),
-                      labelStyle: TextStyle(
-                        color: selected ? Pal.ember : Pal.dim,
-                        fontWeight: selected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                      onSelected: (_) => setState(
+                        () => _selectedGroup = selected ? null : group,
                       ),
-                      side: BorderSide(color: selected ? Pal.ember : Pal.line),
+                      selectedColor: Pal.purple.withValues(alpha: 0.25),
+                      labelStyle: TextStyle(
+                        color: selected ? Pal.purple : Pal.dim,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      side: BorderSide(
+                        color: selected ? Pal.purple : Pal.line,
+                        width: 1.5,
+                      ),
                     );
                   },
                 ),
               ),
-
               // Список упражнений
               Expanded(
                 child: filtered.isEmpty
-                    ? Center(
+                    ? const Center(
                         child: Text(
                           'В этой группе нет упражнений',
-                          style: TextStyle(color: Pal.dim),
+                          style: TextStyle(color: Pal.dim, fontSize: 16),
                         ),
                       )
                     : ListView.builder(
@@ -129,10 +102,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           final primaryGroup = primaryMuscleGroup(
                             item.shareMap,
                           );
-
-                          // Подсвечиваем все мышцы, которые задействованы в упражнении
                           final highlight = item.shareMap.keys.toSet();
-                          // Если основная группа не определена, показываем все тело (fallback)
                           final back = primaryGroup?.back ?? false;
                           final crop =
                               primaryGroup?.crop ??
@@ -143,81 +113,136 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                               'Описание временно отсутствует.';
 
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
+                            margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
                               color: Pal.surface,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: Pal.line),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Векторная графика: MiniBody из твоего проекта
-                                  Container(
-                                    width: 80,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black12,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    padding: const EdgeInsets.all(4),
-                                    child: MiniBody(
-                                      highlight: highlight,
-                                      back: back,
-                                      crop: crop,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.exercise.name,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w800,
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // ТВОЙ КРАСИВЫЙ MINI BODY
+                                      Container(
+                                        width: 80,
+                                        height: 110,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${equipmentRu(item.exercise.equipment)} · ${primaryGroup?.name ?? "Разное"}',
+                                        padding: const EdgeInsets.all(6),
+                                        child: MiniBody(
+                                          highlight: highlight,
+                                          back: back,
+                                          crop: crop,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.exercise.name,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: -0.4,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Pal.ice.withValues(
+                                                      alpha: 0.15,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    equipmentRu(
+                                                      item.exercise.equipment,
+                                                    ),
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Pal.ice,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  primaryGroup?.name ??
+                                                      'Разное',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Pal.dim,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              description,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                height: 1.45,
+                                                color: Pal.dimLight,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: item.shares.take(4).map((e) {
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Pal.surface2,
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${e.key} ${(e.value * 100).round()}%',
                                           style: const TextStyle(
                                             fontSize: 12,
                                             color: Pal.dim,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          description,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            height: 1.4,
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        // Проценты задействованных мышц (как в ExercisePicker)
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 4,
-                                          children: item.shares.take(3).map((
-                                            e,
-                                          ) {
-                                            return Text(
-                                              '${e.key} ${(e.value * 100).round()}%',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Pal.dim,
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ],
-                                    ),
+                                      );
+                                    }).toList(),
                                   ),
                                 ],
                               ),

@@ -85,7 +85,7 @@ Map<String, MuscleResult> muscleScores({
       return b;
     });
 
-    final factor = 0.5 + 0.5 * math.min(1.0, l.share / 0.5);
+    final factor = l.share;
     (byMuscle[l.muscle] ??= []).add(MuscleSource(l.exercise, best * factor));
   }
 

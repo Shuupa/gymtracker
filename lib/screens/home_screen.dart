@@ -116,7 +116,6 @@ class HomeScreen extends ConsumerWidget {
           );
 
           final active = workouts.where((item) => !item.isFinished).toList();
-
           final history = workouts.where((item) => item.isFinished).toList();
 
           return ListView(
@@ -177,7 +176,7 @@ class HomeScreen extends ConsumerWidget {
                         padding: const EdgeInsets.only(right: 22),
                         decoration: BoxDecoration(
                           color: Pal.hot.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
                           Icons.delete_outline_rounded,
@@ -204,7 +203,6 @@ class HomeScreen extends ConsumerWidget {
         onPressed: () async {
           final id = await db.startWorkout();
           if (!context.mounted) return;
-
           await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => WorkoutScreen(workoutId: id)),
@@ -234,9 +232,21 @@ class _ActivityPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Pal.surface,
-        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A2A42), Color(0xFF0F1928)],
+        ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Pal.line),
+        boxShadow: [
+          BoxShadow(
+            color: Pal.ice.withValues(alpha: 0.06),
+            blurRadius: 24,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -263,8 +273,9 @@ class _ActivityPanel extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: Pal.ice.withValues(alpha: 0.09),
+                    color: Pal.ice.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Pal.ice.withValues(alpha: 0.35)),
                   ),
                   child: const Text(
                     '7 ДНЕЙ',
@@ -300,7 +311,7 @@ class _ActivityPanel extends StatelessWidget {
               ],
             ),
           ),
-          Container(height: 1, color: Pal.line),
+          Container(height: 1, color: Pal.line.withValues(alpha: 0.7)),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
             child: _WeekActivityChart(workouts: workouts),
@@ -337,7 +348,7 @@ class _MainMetric extends StatelessWidget {
               color: Pal.text,
               fontSize: compact ? 19 : 28,
               height: 1.1,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               letterSpacing: -1,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -381,98 +392,97 @@ class _WeekActivityChart extends StatelessWidget {
       (maximum, count) => count > maximum ? count : maximum,
     );
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 92,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: List.generate(7, (index) {
-              final count = counts[index];
-              final isToday =
-                  days[index].year == today.year &&
-                  days[index].month == today.month &&
-                  days[index].day == today.day;
+    return SizedBox(
+      height: 92,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(7, (index) {
+          final count = counts[index];
+          final isToday =
+              days[index].year == today.year &&
+              days[index].month == today.month &&
+              days[index].day == today.day;
 
-              final hasWorkout = count > 0;
+          final hasWorkout = count > 0;
 
-              final barHeight = hasWorkout
-                  ? 12.0 + 48.0 * count / (maxCount == 0 ? 1 : maxCount)
-                  : 4.0;
+          final barHeight = hasWorkout
+              ? 12.0 + 48.0 * count / (maxCount == 0 ? 1 : maxCount)
+              : 4.0;
 
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 15,
-                        child: Center(
-                          child: Text(
-                            hasWorkout ? '$count' : '',
-                            style: const TextStyle(
-                              color: Pal.ice,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 15,
+                    child: Center(
+                      child: Text(
+                        hasWorkout ? '$count' : '',
+                        style: const TextStyle(
+                          color: Pal.ice,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: Stack(
+                      alignment: Alignment.bottomCenter,
+                      children: [
+                        Container(
+                          width: 12,
+                          decoration: BoxDecoration(
+                            color: Pal.surface2.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(5),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Expanded(
-                        child: Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            Container(
-                              width: 12,
-                              decoration: BoxDecoration(
-                                color: Pal.surface2,
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              width: 12,
-                              height: barHeight,
-                              decoration: BoxDecoration(
-                                color: hasWorkout ? Pal.ice : Pal.line,
-                                borderRadius: BorderRadius.circular(5),
-                                boxShadow: hasWorkout
-                                    ? [
-                                        BoxShadow(
-                                          color: Pal.ice.withValues(
-                                            alpha: 0.18,
-                                          ),
-                                          blurRadius: 10,
-                                          spreadRadius: 1,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                            ),
-                          ],
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: 12,
+                          height: barHeight,
+                          decoration: BoxDecoration(
+                            gradient: hasWorkout
+                                ? const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [Pal.ice, Pal.cold],
+                                  )
+                                : null,
+                            color: hasWorkout ? null : Pal.line,
+                            borderRadius: BorderRadius.circular(5),
+                            boxShadow: hasWorkout
+                                ? [
+                                    BoxShadow(
+                                      color: Pal.ice.withValues(alpha: 0.30),
+                                      blurRadius: 12,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 9),
-                      Text(
-                        _weekdays[days[index].weekday - 1],
-                        style: TextStyle(
-                          color: isToday ? Pal.ice : Pal.dim,
-                          fontSize: 9,
-                          fontWeight: isToday
-                              ? FontWeight.w800
-                              : FontWeight.w500,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ],
+                  const SizedBox(height: 9),
+                  Text(
+                    _weekdays[days[index].weekday - 1],
+                    style: TextStyle(
+                      color: isToday ? Pal.ice : Pal.dim,
+                      fontSize: 9,
+                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
@@ -493,7 +503,7 @@ class _SectionHeading extends StatelessWidget {
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontSize: 17,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
             ),
           ),
@@ -528,17 +538,24 @@ class _WorkoutCard extends StatelessWidget {
     final isActive = !summary.isFinished;
 
     return Material(
-      color: Pal.surface,
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isActive
+                  ? [const Color(0xFF1A2A42), const Color(0xFF0F1928)]
+                  : [const Color(0xFF141C29), const Color(0xFF0C121C)],
+            ),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isActive ? Pal.ice.withValues(alpha: 0.65) : Pal.line,
+              color: isActive ? Pal.ice.withValues(alpha: 0.55) : Pal.line,
             ),
           ),
           child: Column(
@@ -547,20 +564,25 @@ class _WorkoutCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: isActive
-                          ? Pal.ice.withValues(alpha: 0.12)
-                          : Pal.surface2,
+                      gradient: isActive
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Pal.ice, Pal.cold],
+                            )
+                          : null,
+                      color: isActive ? null : Pal.surface2,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       isActive
                           ? Icons.fitness_center_rounded
                           : Icons.check_rounded,
-                      color: isActive ? Pal.ice : Pal.dim,
-                      size: 19,
+                      color: isActive ? const Color(0xFF07111C) : Pal.dim,
+                      size: 20,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -573,7 +595,8 @@ class _WorkoutCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Pal.text,
                             fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -619,7 +642,7 @@ class _WorkoutCard extends StatelessWidget {
               ),
               if (summary.exerciseNames.isNotEmpty) ...[
                 const SizedBox(height: 13),
-                Container(height: 1, color: Pal.line.withValues(alpha: 0.8)),
+                Container(height: 1, color: Pal.line.withValues(alpha: 0.7)),
                 const SizedBox(height: 10),
                 Text(
                   summary.exerciseNames.join('  ·  '),
@@ -658,9 +681,9 @@ class _WorkoutValue extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Pal.text,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 4),
@@ -680,7 +703,7 @@ class _EmptyHistory extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Pal.line),
       ),
       child: const Row(
