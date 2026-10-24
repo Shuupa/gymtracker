@@ -10,34 +10,36 @@ import '../ui/theme.dart';
 
 class CatalogItem {
   final Exercise exercise;
-  final List<MapEntry<String, double>> shares; // по убыванию доли
+  final List<MapEntry<String, double>> shares;
   final Map<String, double> shareMap;
+
   CatalogItem(this.exercise, this.shares)
-    : shareMap = {for (final e in shares) e.key: e.value};
+    : shareMap = {for (final entry in shares) entry.key: entry.value};
 }
 
 final catalogProvider = FutureProvider.autoDispose<List<CatalogItem>>((
   ref,
 ) async {
   final db = ref.watch(dbProvider);
-  final exs = await db.select(db.exercises).get();
+  final exercises = await db.select(db.exercises).get();
   final links = await db.exerciseMuscleLinks();
-  final by = <int, Map<String, double>>{};
-  for (final l in links) {
-    (by[l.exerciseId] ??= {})[l.muscle] = l.share;
+  final byExercise = <int, Map<String, double>>{};
+  for (final link in links) {
+    (byExercise[link.exerciseId] ??= {})[link.muscle] = link.share;
   }
   return [
-    for (final e in exs)
+    for (final exercise in exercises)
       CatalogItem(
-        e,
-        (by[e.id]?.entries.toList() ?? <MapEntry<String, double>>[])
+        exercise,
+        (byExercise[exercise.id]?.entries.toList() ??
+              <MapEntry<String, double>>[])
           ..sort((a, b) => b.value.compareTo(a.value)),
       ),
   ];
 });
 
-/// Выбор упражнения: сначала группа мышц (плитки с картинкой тела),
-/// потом список упражнений. Возвращает id выбранного упражнения.
+/// Выбор упражнения: сначала карточки групп мышц, затем список упражнений.
+/// Возвращает id выбранного упражнения через Navigator.pop(context, id).
 class ExercisePickerScreen extends ConsumerStatefulWidget {
   const ExercisePickerScreen({super.key});
 
@@ -93,23 +95,25 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                   prefixIcon: Icon(Icons.search),
                   hintText: 'Поиск по всем упражнениям',
                 ),
-                onChanged: (v) => setState(() => _query = v.trim()),
+                onChanged: (value) => setState(() => _query = value.trim()),
               ),
             ),
             Expanded(
               child: catalog.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, st) => Padding(
+                error: (error, stack) => Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text('Ошибка: $e\n$st'),
+                  child: Text('Ошибка: $error\n$stack'),
                 ),
                 data: (items) {
                   if (_query.isNotEmpty) {
-                    final q = _query.toLowerCase();
+                    final query = _query.toLowerCase();
                     final found =
                         items
                             .where(
-                              (i) => i.exercise.name.toLowerCase().contains(q),
+                              (item) => item.exercise.name
+                                  .toLowerCase()
+                                  .contains(query),
                             )
                             .toList()
                           ..sort(
@@ -119,21 +123,22 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                     return _list(found, null);
                   }
                   if (_group == null) return _grid(items);
-                  final g = _group!;
+
+                  final group = _group!;
                   final inGroup =
-                      items.where((i) {
-                        final primaryGroup = primaryMuscleGroup(i.shareMap);
-                        return primaryGroup?.name == g.name;
+                      items.where((item) {
+                        final primary = primaryMuscleGroup(item.shareMap);
+                        return primary?.name == group.name;
                       }).toList()..sort((a, b) {
-                        final c = groupShare(
-                          g,
+                        final shareOrder = groupShare(
+                          group,
                           b.shareMap,
-                        ).compareTo(groupShare(g, a.shareMap));
-                        return c != 0
-                            ? c
+                        ).compareTo(groupShare(group, a.shareMap));
+                        return shareOrder != 0
+                            ? shareOrder
                             : a.exercise.name.compareTo(b.exercise.name);
                       });
-                  return _list(inGroup, g);
+                  return _list(inGroup, group);
                 },
               ),
             ),
@@ -151,19 +156,22 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
       crossAxisSpacing: 10,
       childAspectRatio: 0.8,
       children: [
-        for (final g in muscleGroups)
+        for (final group in muscleGroups)
           _GroupTile(
-            group: g,
+            group: group,
             count: items
-                .where((i) => primaryMuscleGroup(i.shareMap)?.name == g.name)
+                .where(
+                  (item) =>
+                      primaryMuscleGroup(item.shareMap)?.name == group.name,
+                )
                 .length,
-            onTap: () => setState(() => _group = g),
+            onTap: () => setState(() => _group = group),
           ),
       ],
     );
   }
 
-  Widget _list(List<CatalogItem> items, MuscleGroup? g) {
+  Widget _list(List<CatalogItem> items, MuscleGroup? group) {
     if (items.isEmpty) {
       return const Center(
         child: Text('Ничего не найдено', style: TextStyle(color: Pal.dim)),
@@ -173,41 +181,41 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (_, i) {
-        final it = items[i];
+      itemBuilder: (_, index) {
+        final item = items[index];
         return ListTile(
           title: Text(
-            it.exercise.name,
+            item.exercise.name,
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: _MuscleShares(item: it, group: g),
+            child: _MuscleShares(item: item, group: group),
           ),
           trailing: Text(
-            equipmentRu(it.exercise.equipment),
+            equipmentRu(item.exercise.equipment),
             style: const TextStyle(color: Pal.dim, fontSize: 12),
           ),
-          onTap: () => Navigator.pop(context, it.exercise.id),
+          onTap: () => Navigator.pop(context, item.exercise.id),
         );
       },
     );
   }
 }
 
-/// «Грудь 55% · Трицепс 25% · Передние дельты 20%», мышцы текущей группы выделены.
 class _MuscleShares extends StatelessWidget {
   final CatalogItem item;
   final MuscleGroup? group;
+
   const _MuscleShares({required this.item, required this.group});
 
   @override
   Widget build(BuildContext context) {
     final spans = <InlineSpan>[];
-    for (var i = 0; i < item.shares.length; i++) {
-      final e = item.shares[i];
-      final hl = group != null && group!.muscles.contains(e.key);
-      if (i > 0) {
+    for (var index = 0; index < item.shares.length; index++) {
+      final entry = item.shares[index];
+      final highlighted = group != null && group!.muscles.contains(entry.key);
+      if (index > 0) {
         spans.add(
           const TextSpan(
             text: '  ·  ',
@@ -217,10 +225,10 @@ class _MuscleShares extends StatelessWidget {
       }
       spans.add(
         TextSpan(
-          text: '${e.key} ${(e.value * 100).round()}%',
+          text: '${entry.key} ${(entry.value * 100).round()}%',
           style: TextStyle(
-            color: hl ? Pal.ember : Pal.dim,
-            fontWeight: hl ? FontWeight.w800 : FontWeight.w500,
+            color: highlighted ? Pal.ember : Pal.dim,
+            fontWeight: highlighted ? FontWeight.w800 : FontWeight.w500,
           ),
         ),
       );
@@ -236,6 +244,7 @@ class _GroupTile extends StatelessWidget {
   final MuscleGroup group;
   final int count;
   final VoidCallback onTap;
+
   const _GroupTile({
     required this.group,
     required this.count,

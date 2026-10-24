@@ -96,7 +96,7 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  _Stat('Рекорд 1RM', '${fmtNum(_r(best))} кг'),
+                  _Stat('Макс. 1RM', '${fmtNum(_r(best))} кг'),
                   _Stat('Последняя', '${fmtNum(_r(values.last))} кг'),
                   _Stat(
                     'К прошлой',

@@ -35,8 +35,13 @@ double setScore(
 }) {
   if (reps <= 0) return 0;
   if (std.repBased) {
-    final eff = reps * (1 + (bodyWeight > 0 ? weight / bodyWeight : 0.0));
-    return std.score(eff, isMale);
+    // Для обычных подходов оцениваем число повторений по нормативу.
+    // Если введена общая нагрузка, корректируем её относительно массы тела;
+    // не прибавляем массу тела повторно к уже полной нагрузке.
+    final effectiveReps = weight > 0 && bodyWeight > 0
+        ? reps * (weight / bodyWeight)
+        : reps.toDouble();
+    return std.score(effectiveReps, isMale);
   }
   final load = effectiveExerciseLoad(
     exerciseName: exerciseName,

@@ -162,6 +162,12 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteSet(int id) =>
       (delete(workoutSets)..where((s) => s.id.equals(id))).go();
 
+  /// Edit an already recorded set without deleting/recreating its history row.
+  Future<void> updateSet(int id, double weight, int reps) =>
+      (update(workoutSets)..where((s) => s.id.equals(id))).write(
+        WorkoutSetsCompanion(weight: Value(weight), reps: Value(reps)),
+      );
+
   /// Подходы из последней ЗАВЕРШЁННОЙ тренировки, где было это упражнение.
   Future<List<WorkoutSet>> lastSetsFor(
     int exerciseId,

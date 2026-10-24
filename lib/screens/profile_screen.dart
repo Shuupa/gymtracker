@@ -1,5 +1,7 @@
 // lib/screens/profile_screen.dart
 
+import 'dart:convert';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,9 +21,31 @@ import '../ui/levels.dart';
 import '../ui/theme.dart';
 import '../ui/widgets.dart';
 import 'exercise_progress_screen.dart';
+import 'program_generator_screen.dart';
 
 String _format1(num value) =>
     ((value * 10).roundToDouble() / 10).toStringAsFixed(1);
+
+/// Отображает именно выполненный рекордный подход, а не расчётный 1RM.
+String _recordSetLabel({
+  required Exercise exercise,
+  required SetData? set,
+  required double bodyWeight,
+}) {
+  if (set == null) return '—';
+  if (exercise.equipment == 'bodyweight' && set.weight <= 0) {
+    final effectiveLoad = effectiveExerciseLoad(
+      exerciseName: exercise.name,
+      equipment: exercise.equipment,
+      bodyWeight: bodyWeight,
+      enteredWeight: 0,
+    );
+    return effectiveLoad > 0
+        ? '≈${_format1(effectiveLoad)} кг × ${set.reps}'
+        : 'Свой вес × ${set.reps}';
+  }
+  return '${_format1(set.weight)} × ${set.reps}';
+}
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -387,6 +411,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final exercisesAsync = ref.watch(exercisesProvider);
+    final workoutsAsync = ref.watch(workoutsProvider);
 
     if (!_loaded) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -414,6 +439,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
           ),
 
+          const SizedBox(height: 20),
+          const _SavedProgramCard(),
+          const SizedBox(height: 18),
+          workoutsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (workouts) => _AttendanceHeatmap(workouts: workouts),
+          ),
           const SizedBox(height: 24),
           const SizedBox(height: 26),
           _SectionHeading(
@@ -1396,12 +1429,11 @@ class _FavoriteExerciseCard extends ConsumerWidget {
                           Expanded(
                             child: _MiniMetric(
                               label: 'Рекордный подход',
-                              value: bestSet == null
-                                  ? '—'
-                                  : exercise.equipment == 'bodyweight' &&
-                                        bestSet.weight <= 0
-                                  ? 'Свой вес × ${bestSet.reps}'
-                                  : '${_format1(bestSet.weight)} × ${bestSet.reps}',
+                              value: _recordSetLabel(
+                                exercise: exercise,
+                                set: bestSet,
+                                bodyWeight: bodyWeight,
+                              ),
                             ),
                           ),
                           Expanded(
@@ -1561,11 +1593,11 @@ class _ExerciseHistoryEntry extends ConsumerWidget {
               }
               return current;
             });
-        final recordLabel = bestSet == null
-            ? '—'
-            : exercise.equipment == 'bodyweight' && bestSet.weight <= 0
-            ? 'Свой вес × ${bestSet.reps}'
-            : '${_format1(bestSet.weight)} × ${bestSet.reps}';
+        final recordLabel = _recordSetLabel(
+          exercise: exercise,
+          set: bestSet,
+          bodyWeight: bodyWeight,
+        );
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -1791,5 +1823,305 @@ class _EmptyPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _SavedProgramCard extends StatelessWidget {
+  const _SavedProgramCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<SharedPreferences>(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        final raw = snapshot.data?.getString('savedTrainingProgram');
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
+        if (raw == null || raw.isEmpty) {
+          return Material(
+            color: Pal.surface,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ProgramGeneratorScreen(),
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Pal.line),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: Pal.ice, size: 28),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Персональная программа',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Составить план под свои цели и предпочтения',
+                            style: TextStyle(color: Pal.dim, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: Pal.dim),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        Map<String, dynamic> program;
+        try {
+          program = jsonDecode(raw) as Map<String, dynamic>;
+        } catch (_) {
+          return const SizedBox.shrink();
+        }
+        final options = program['options'] is Map
+            ? Map<String, dynamic>.from(program['options'] as Map)
+            : <String, dynamic>{};
+        final days = program['days'] is List
+            ? program['days'] as List
+            : const [];
+        final completed =
+            (snapshot.data?.getStringList('programCompletedDays') ?? [])
+                .map(int.tryParse)
+                .whereType<int>()
+                .toSet();
+        final goal = switch (options['goal']) {
+          'strength' => 'Сила',
+          'general' => 'Общее развитие',
+          _ => 'Рост мышц',
+        };
+
+        return Material(
+          color: Pal.surface,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProgramGeneratorScreen()),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Pal.line),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0x1F49D18D),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month_rounded,
+                      color: Color(0xFF49D18D),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Моя программа',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$goal · ${options['daysPerWeek'] ?? days.length} тренировок в неделю',
+                          style: const TextStyle(color: Pal.dim, fontSize: 11),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Закрыто ${completed.length} из ${days.length} тренировок',
+                          style: const TextStyle(
+                            color: Color(0xFF49D18D),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Pal.dim),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AttendanceHeatmap extends StatelessWidget {
+  final List<Workout> workouts;
+  const _AttendanceHeatmap({required this.workouts});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final first = DateTime(now.year, now.month, 1);
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final monthNames = const [
+      'январь',
+      'февраль',
+      'март',
+      'апрель',
+      'май',
+      'июнь',
+      'июль',
+      'август',
+      'сентябрь',
+      'октябрь',
+      'ноябрь',
+      'декабрь',
+    ];
+    final visited = <int>{};
+    for (final workout in workouts) {
+      final finished = workout.finishedAt;
+      if (finished == null) continue;
+      if (finished.year == now.year && finished.month == now.month) {
+        visited.add(finished.day);
+      }
+    }
+    final visitCount = visited.length;
+
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Pal.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Pal.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Посещения зала',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                '${monthNames[first.month - 1]} ${now.year}',
+                style: const TextStyle(color: Pal.dim, fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '$visitCount ${_visitWord(visitCount)} в этом месяце',
+            style: const TextStyle(color: Pal.dim, fontSize: 12),
+          ),
+          const SizedBox(height: 13),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 40,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 10,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
+              childAspectRatio: 1,
+            ),
+            itemBuilder: (context, index) {
+              final day = index + 1;
+              if (day > daysInMonth) {
+                return Opacity(
+                  opacity: 0.06,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Pal.dim,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                );
+              }
+              final attended = visited.contains(day);
+              final date = DateTime(now.year, now.month, day);
+              final future = date.isAfter(
+                DateTime(now.year, now.month, now.day),
+              );
+              final color = attended
+                  ? const Color(0xFF49D18D)
+                  : future
+                  ? Pal.surface2
+                  : const Color(0xFF454D58);
+              return Tooltip(
+                message:
+                    '$day ${monthNames[now.month - 1]}${attended ? ' · тренировка' : ''}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text(
+                'Нет тренировки',
+                style: TextStyle(color: Pal.dim, fontSize: 10),
+              ),
+              const Spacer(),
+              Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF49D18D),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 5),
+              const Text(
+                'Был в зале',
+                style: TextStyle(color: Pal.dim, fontSize: 10),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _visitWord(int count) {
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 14) return 'посещений';
+    return switch (count % 10) {
+      1 => 'посещение',
+      2 || 3 || 4 => 'посещения',
+      _ => 'посещений',
+    };
   }
 }

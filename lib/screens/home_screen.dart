@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'program_generator_screen.dart';
 import '../format.dart';
 import '../logic/summaries.dart';
 import '../providers.dart';
@@ -45,6 +46,18 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Обзор'),
         actions: [
+          IconButton(
+            tooltip: 'Генератор программы',
+            icon: const Icon(Icons.auto_awesome_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ProgramGeneratorScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Профиль',
             icon: const Icon(Icons.person_outline_rounded),
