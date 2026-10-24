@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'exercise_picker_screen.dart';
 import '../data/app_database.dart';
 import '../format.dart';
 import '../logic/one_rm.dart';
@@ -40,69 +41,15 @@ class WorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickExercise(BuildContext context, WidgetRef ref) {
-    final db = ref.read(dbProvider);
-    var query = '';
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Pal.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.8,
-          child: Consumer(
-            builder: (_, ref, __) {
-              final all = ref.watch(exercisesProvider).value ?? [];
-              return StatefulBuilder(
-                builder: (_, setSt) {
-                  final list = all
-                      .where(
-                        (e) =>
-                            e.name.toLowerCase().contains(query.toLowerCase()),
-                      )
-                      .toList();
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: TextField(
-                          autofocus: true,
-                          decoration: const InputDecoration(
-                            prefixIcon: Icon(Icons.search),
-                            hintText: 'Поиск упражнения',
-                          ),
-                          onChanged: (v) => setSt(() => query = v),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: list.length,
-                          itemBuilder: (_, i) => ListTile(
-                            title: Text(list[i].name),
-                            subtitle: Text(
-                              equipmentRu(list[i].equipment),
-                              style: const TextStyle(color: Pal.dim),
-                            ),
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              db.addExerciseToWorkout(workoutId, list[i].id);
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ),
+  Future<void> _pickExercise(BuildContext context, WidgetRef ref) async {
+    final exerciseId = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(builder: (_) => const ExercisePickerScreen()),
     );
+
+    if (exerciseId == null || !context.mounted) return;
+
+    await ref.read(dbProvider).addExerciseToWorkout(workoutId, exerciseId);
   }
 
   @override
