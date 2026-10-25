@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'one_rm.dart';
 import 'standards.dart';
 

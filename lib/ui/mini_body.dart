@@ -39,33 +39,38 @@ class _MiniPainter extends CustomPainter {
     final view = back ? 1 : 0;
     canvas.translate(-(crop.left + view * 200.0), -crop.top);
 
-    final fill = Paint()
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5 / s
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true;
-
+    // сначала обычные части, потом подсвеченные мышцы, потом борозды
     for (final pass in [false, true]) {
       for (final sh in bodyShapes) {
-        if (sh.view != view) continue;
-        final hl = sh.muscle != null && highlight.contains(sh.muscle);
+        if (sh.view != view || isDetailKind(sh.kind)) continue;
+        final hl = sh.kind == BodyKind.muscle && highlight.contains(sh.muscle);
         if (hl != pass) continue;
 
+        final Color fill;
+        final Color stroke;
         if (hl) {
-          fill.color = Pal.ice.withValues(alpha: 0.9);
-          line.color = Pal.ice;
+          fill = Pal.ice.withValues(alpha: 0.9);
+          stroke = Pal.ice;
         } else {
-          fill.color = sh.muscle == null
-              ? const Color(0xFF0A0E14)
-              : const Color(0xFF161E29);
-          line.color = const Color(0xFF2E3D52);
+          fill = switch (sh.kind) {
+            BodyKind.muscle => const Color(0xFF161E29),
+            BodyKind.hair => const Color(0xFF05080C),
+            _ => const Color(0xFF0A0E14),
+          };
+          stroke = const Color(0xFF2E3D52);
         }
-
-        canvas.drawPath(sh.path, fill);
-        canvas.drawPath(sh.path, line);
+        paintBodyShape(
+          canvas,
+          sh,
+          fill: fill,
+          stroke: stroke,
+          strokeWidth: 1.5 / s,
+        );
+      }
+    }
+    for (final sh in bodyShapes) {
+      if (sh.view == view && isDetailKind(sh.kind)) {
+        paintBodyDetail(canvas, sh, s);
       }
     }
     canvas.restore();

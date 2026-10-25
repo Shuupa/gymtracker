@@ -1,3 +1,5 @@
+import '../ui/exercise_demo.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -217,6 +219,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 16),
+                                  ExerciseDemo(name: item.exercise.name),
                                   const SizedBox(height: 16),
                                   Wrap(
                                     spacing: 8,

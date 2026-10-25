@@ -11,7 +11,6 @@ import 'dart:math' as math;
 
 import '../data/app_database.dart';
 import '../data/seed.dart' show muscleNames;
-import '../format.dart';
 import '../logic/muscle_strength.dart';
 import '../logic/one_rm.dart';
 import '../logic/working_sets.dart';
