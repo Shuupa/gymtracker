@@ -12,6 +12,7 @@ import 'dart:math' as math;
 import '../data/app_database.dart';
 import '../data/seed.dart' show muscleNames;
 import '../logic/muscle_strength.dart';
+import '../logic/profile_rating.dart';
 import '../logic/one_rm.dart';
 import '../logic/working_sets.dart';
 import '../providers.dart';
@@ -663,20 +664,10 @@ class _FitnessRating extends StatelessWidget {
     final average = allScores.isEmpty
         ? 0.0
         : allScores.reduce((a, b) => a + b) / allScores.length;
-    final percent = ((average * 1000).roundToDouble() / 10);
-    final rankIndex = (percent / 10).floor().clamp(0, 9);
-    final rankNames = const [
-      'Couch Potato',
-      'String Bean',
-      'Gym Rat',
-      'Swole',
-      'Ripped',
-      'Jacked',
-      'Shredded',
-      'Absolute Unit',
-      'Gym Boss',
-      'Final Boss of This Gym',
-    ];
+    // Elo 0…2200+
+    final elo = (average * 2200).roundToDouble();
+    final rankIndex = rankIndexForElo(elo).clamp(0, gymRanks.length - 1);
+    final rank = gymRanks[rankIndex];
     final ranking = scores.entries.toList()
       ..sort((a, b) => a.value.score.compareTo(b.value.score));
     final strongest = ranking.reversed.take(3).toList();
@@ -710,7 +701,7 @@ class _FitnessRating extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      rankNames[rankIndex],
+                      rank.title,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -718,10 +709,10 @@ class _FitnessRating extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '${percent.toStringAsFixed(1)}% развития',
+                      '${elo.toStringAsFixed(0)} Elo · ${rank.description}',
                       style: const TextStyle(
                         color: Pal.ice,
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -827,10 +818,10 @@ class _GymRankPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.44;
-    final t = rankIndex / 9;
+    final t = (rankIndex / 9).clamp(0.0, 1.0);
     final accent = Color.lerp(
-      const Color(0xFF718096),
-      const Color(0xFF8BE9FF),
+      const Color(0xFFA8D4F0),
+      const Color(0xFF7C3AED),
       t,
     )!;
 
@@ -1107,7 +1098,7 @@ class _MuscleProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = <String, Color>{
       for (final entry in scores.entries)
-        entry.key: levelColor(entry.value.score),
+        entry.key: heatColor(entry.value.score),
     };
 
     final ranking = scores.entries.toList()

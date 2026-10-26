@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 enum OneRmFormula { epley, brzycki, lombardi, average }
 
-const maxRepsForEstimate = 12;
+const maxRepsForEstimate = 30;
 
 /// Приблизительная доля массы тела, фактически перемещаемая в упражнении.
 /// Значения нужны только для оценки упражнений с собственным весом без введённой нагрузки.

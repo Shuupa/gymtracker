@@ -32,10 +32,11 @@ class _GymRankPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.43;
 
+    // светло-голубой → тёмно-фиолетовый неон
     final accent = Color.lerp(
-      const Color(0xFF718096),
-      const Color(0xFF8BE9FF),
-      rankIndex / 9,
+      const Color(0xFFA8D4F0),
+      const Color(0xFF7C3AED),
+      (rankIndex / 9).clamp(0.0, 1.0),
     )!;
 
     final backgroundPaint = Paint()

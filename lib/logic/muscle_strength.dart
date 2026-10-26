@@ -33,9 +33,6 @@ double setScore(
 }) {
   if (reps <= 0) return 0;
   if (std.repBased) {
-    // Rep-based norms are defined by completed repetitions. Do not scale
-    // repetitions by weight/body-weight: that makes the score collapse for
-    // normal external loads (e.g. 40 kg at 80 kg body weight).
     return std.score(reps.toDouble(), isMale);
   }
   final load = effectiveExerciseLoad(
@@ -49,15 +46,32 @@ double setScore(
   return std.score(oneRm(load, r) / bodyWeight, isMale);
 }
 
+/// Насколько упражнение должно двигать оценку мышцы.
+///
+/// Главный движитель (и почти равные со-лидеры) получают полный балл.
+/// Раньше балл умножался на сырую долю: грудь в жиме 0.55, широчайшие
+/// в тяге 0.40, ягодицы в становой 0.30 — элита становилась «средним»
+/// на каждой мышце.
+double muscleCredit(double share, double topShare) {
+  if (share <= 0 || topShare <= 0) return 0;
+  final relative = share / topShare;
+  if (relative >= 0.65) return 1.0;
+  return 0.0;
+}
+
 /// Сила мышцы = лучшее из упражнений, которые её нагружают.
-/// Если мышца в упражнении основная (доля >= 0.5), оценка учитывается
-/// полностью, если второстепенная, то со скидкой (до 50%).
 Map<String, MuscleResult> muscleScores({
   required Map<int, List<SetData>> sets,
   required List<MuscleLink> links,
   required double bodyWeight,
   required bool isMale,
 }) {
+  final topShare = <int, double>{};
+  for (final l in links) {
+    final cur = topShare[l.exerciseId] ?? 0;
+    if (l.share > cur) topShare[l.exerciseId] = l.share;
+  }
+
   final exScore = <int, double>{};
   final byMuscle = <String, List<MuscleSource>>{};
 
@@ -83,8 +97,11 @@ Map<String, MuscleResult> muscleScores({
       return b;
     });
 
-    final factor = l.share;
-    (byMuscle[l.muscle] ??= []).add(MuscleSource(l.exercise, best * factor));
+    final credit = muscleCredit(l.share, topShare[l.exerciseId] ?? l.share);
+    if (credit <= 0 || best <= 0) continue;
+    (byMuscle[l.muscle] ??= []).add(
+      MuscleSource(l.exercise, (best * credit).clamp(0.0, 1.0)),
+    );
   }
 
   final res = <String, MuscleResult>{};

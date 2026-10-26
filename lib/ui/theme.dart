@@ -33,12 +33,20 @@ class Pal {
   );
 }
 
+/// Градиент силы: светло-голубой → тёмно-фиолетовый.
 Color heatColor(double s) {
-  final value = s.clamp(0.0, 1.0);
-  if (value < 0.5) {
-    return Color.lerp(Pal.cold, Pal.ice, value / 0.5)!;
-  }
-  return Color.lerp(Pal.ice, Pal.purple, (value - 0.5) / 0.5)!;
+  final t = s.clamp(0.0, 1.0);
+  const stops = [
+    Color(0xFFA8D4F0),
+    Color(0xFF5BA3D9),
+    Color(0xFF6366F1),
+    Color(0xFFA855F7),
+    Color(0xFF6D28D9),
+  ];
+  final scaled = t * (stops.length - 1);
+  final i = scaled.floor().clamp(0, stops.length - 2);
+  final f = scaled - i;
+  return Color.lerp(stops[i], stops[i + 1], f)!;
 }
 
 ThemeData buildTheme() {

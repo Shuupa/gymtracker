@@ -119,13 +119,17 @@ class HomeScreen extends ConsumerWidget {
           final history = workouts.where((item) => item.isFinished).toList();
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 112),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
             children: [
               _ActivityPanel(
                 workouts: workouts,
                 weekCount: week.length,
                 weekSets: weekSets,
                 weekVolume: weekVolume,
+                weekDuration: week.fold<Duration>(
+                  Duration.zero,
+                  (sum, item) => sum + (item.duration ?? Duration.zero),
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -156,45 +160,21 @@ class HomeScreen extends ConsumerWidget {
                 title: 'История',
                 trailing: '${history.length} тренировок',
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
 
               if (history.isEmpty)
                 const _EmptyHistory()
               else
-                for (final item in history)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Dismissible(
-                      key: ValueKey('workout-${item.workout.id}'),
-                      direction: DismissDirection.endToStart,
-                      confirmDismiss: (_) => _confirmDelete(context, item),
-                      onDismissed: (_) {
-                        db.deleteWorkout(item.workout.id);
-                      },
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 22),
-                        decoration: BoxDecoration(
-                          color: Pal.hot.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Icon(
-                          Icons.delete_outline_rounded,
-                          color: Pal.hot,
-                        ),
-                      ),
-                      child: _WorkoutCard(
-                        summary: item,
-                        onTap: () => _openWorkout(context, item),
-                        onDelete: () async {
-                          final confirmed = await _confirmDelete(context, item);
-                          if (confirmed) {
-                            await db.deleteWorkout(item.workout.id);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
+                _HistoryList(
+                  history: history,
+                  onOpen: (item) => _openWorkout(context, item),
+                  onDelete: (item) async {
+                    final confirmed = await _confirmDelete(context, item);
+                    if (confirmed) {
+                      await db.deleteWorkout(item.workout.id);
+                    }
+                  },
+                ),
             ],
           );
         },
@@ -220,12 +200,14 @@ class _ActivityPanel extends StatelessWidget {
   final int weekCount;
   final int weekSets;
   final double weekVolume;
+  final Duration weekDuration;
 
   const _ActivityPanel({
     required this.workouts,
     required this.weekCount,
     required this.weekSets,
     required this.weekVolume,
+    required this.weekDuration,
   });
 
   @override
@@ -296,7 +278,10 @@ class _ActivityPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: _MainMetric(value: '$weekCount', label: 'Тренировки'),
+                  child: _MainMetric(
+                    value: _fmtWeekDuration(weekDuration),
+                    label: 'В зале',
+                  ),
                 ),
                 Expanded(
                   child: _MainMetric(value: '$weekSets', label: 'Подходы'),
@@ -378,18 +363,23 @@ class _WeekActivityChart extends StatelessWidget {
       (index) => midnight.subtract(Duration(days: 6 - index)),
     );
 
-    final counts = days.map((day) {
-      return workouts.where((item) {
-        final date = item.workout.startedAt;
-        return date.year == day.year &&
-            date.month == day.month &&
-            date.day == day.day;
-      }).length;
+    final minutes = days.map((day) {
+      return workouts
+          .where((item) {
+            final date = item.workout.startedAt;
+            return date.year == day.year &&
+                date.month == day.month &&
+                date.day == day.day;
+          })
+          .fold<int>(0, (sum, item) {
+            final d = item.duration;
+            return sum + (d == null ? 0 : d.inMinutes);
+          });
     }).toList();
 
-    final maxCount = counts.fold<int>(
+    final maxMinutes = minutes.fold<int>(
       0,
-      (maximum, count) => count > maximum ? count : maximum,
+      (maximum, m) => m > maximum ? m : maximum,
     );
 
     return SizedBox(
@@ -397,16 +387,16 @@ class _WeekActivityChart extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: List.generate(7, (index) {
-          final count = counts[index];
+          final mins = minutes[index];
           final isToday =
               days[index].year == today.year &&
               days[index].month == today.month &&
               days[index].day == today.day;
 
-          final hasWorkout = count > 0;
+          final hasWorkout = mins > 0;
 
           final barHeight = hasWorkout
-              ? 12.0 + 48.0 * count / (maxCount == 0 ? 1 : maxCount)
+              ? 12.0 + 48.0 * mins / (maxMinutes == 0 ? 1 : maxMinutes)
               : 4.0;
 
           return Expanded(
@@ -418,7 +408,7 @@ class _WeekActivityChart extends StatelessWidget {
                     height: 15,
                     child: Center(
                       child: Text(
-                        hasWorkout ? '$count' : '',
+                        hasWorkout ? '${mins}м' : '',
                         style: const TextStyle(
                           color: Pal.ice,
                           fontSize: 10,
@@ -732,6 +722,70 @@ class _EmptyHistory extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+String _fmtWeekDuration(Duration d) {
+  if (d.inMinutes <= 0) return '0м';
+  final h = d.inHours;
+  final m = d.inMinutes % 60;
+  if (h <= 0) return '${m}м';
+  if (m == 0) return '${h}ч';
+  return '${h}ч ${m}м';
+}
+
+class _HistoryList extends StatefulWidget {
+  final List<WorkoutSummary> history;
+  final void Function(WorkoutSummary) onOpen;
+  final Future<void> Function(WorkoutSummary) onDelete;
+
+  const _HistoryList({
+    required this.history,
+    required this.onOpen,
+    required this.onDelete,
+  });
+
+  @override
+  State<_HistoryList> createState() => _HistoryListState();
+}
+
+class _HistoryListState extends State<_HistoryList> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _expanded ? widget.history : widget.history.take(3).toList();
+    final canExpand = widget.history.length > 3;
+
+    return Column(
+      children: [
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _WorkoutCard(
+              summary: item,
+              onTap: () => widget.onOpen(item),
+              onDelete: () => widget.onDelete(item),
+            ),
+          ),
+        if (canExpand)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: TextButton(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              child: Text(
+                _expanded
+                    ? 'Свернуть'
+                    : 'Показать ещё (${widget.history.length - 3})',
+                style: const TextStyle(
+                  color: Pal.ice,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
