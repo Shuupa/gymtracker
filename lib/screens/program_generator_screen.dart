@@ -7,109 +7,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/app_database.dart';
 import '../data/seed.dart';
 import '../logic/muscle_strength.dart';
+import '../logic/program_codec.dart';
 import '../logic/program_generator.dart';
 import '../logic/working_sets.dart';
 import '../providers.dart';
 import '../ui/theme.dart';
+import 'custom_program_screen.dart';
 import 'exercise_picker_screen.dart';
 import 'program_exercise_picker_screen.dart';
 import 'workout_screen.dart';
-
-Map<String, dynamic> _programToMap(GeneratedProgram program) => {
-  'options': {
-    'goal': program.options.goal.name,
-    'level': program.options.level.name,
-    'daysPerWeek': program.options.daysPerWeek,
-    'sessionMinutes': program.options.sessionMinutes,
-    'excludedMuscles': program.options.excludedMuscles.toList(),
-    'priorityMuscles': program.options.priorityMuscles.toList(),
-    'excludedExerciseIds': program.options.excludedExerciseIds.toList(),
-    'priorityExerciseIds': program.options.priorityExerciseIds.toList(),
-    'equipment': program.options.equipment.toList(),
-    'autoPrioritize': program.options.autoPrioritize,
-  },
-  'days': [
-    for (final day in program.days)
-      {
-        'title': day.title,
-        'exercises': [
-          for (final e in day.exercises)
-            {
-              'exerciseId': e.exerciseId,
-              'name': e.name,
-              'equipment': e.equipment,
-              'focus': e.focus,
-              'sets': e.sets,
-              'repMin': e.repMin,
-              'repMax': e.repMax,
-              'restSeconds': e.restSeconds,
-              'reason': e.reason,
-            },
-        ],
-      },
-  ],
-  'priorities': program.priorities,
-  'warnings': program.warnings,
-  'plannedWeeklySets': program.plannedWeeklySets,
-};
-
-GeneratedProgram _programFromMap(Map<String, dynamic> json) {
-  final o = Map<String, dynamic>.from(json['options'] as Map);
-  final days = (json['days'] as List<dynamic>? ?? []).map((rawDay) {
-    final day = Map<String, dynamic>.from(rawDay as Map);
-    final exercises = (day['exercises'] as List<dynamic>? ?? []).map((raw) {
-      final e = Map<String, dynamic>.from(raw as Map);
-      return PrescribedExercise(
-        exerciseId: e['exerciseId'] as int,
-        name: e['name'] as String,
-        equipment: e['equipment'] as String,
-        focus: e['focus'] as String,
-        sets: e['sets'] as int,
-        repMin: e['repMin'] as int,
-        repMax: e['repMax'] as int,
-        restSeconds: e['restSeconds'] as int,
-        reason: e['reason'] as String? ?? '',
-      );
-    }).toList();
-    return ProgramDay(title: day['title'] as String, exercises: exercises);
-  }).toList();
-  return GeneratedProgram(
-    options: ProgramOptions(
-      goal: ProgramGoal.values.firstWhere(
-        (v) => v.name == o['goal'],
-        orElse: () => ProgramGoal.hypertrophy,
-      ),
-      level: TrainingLevel.values.firstWhere(
-        (v) => v.name == o['level'],
-        orElse: () => TrainingLevel.beginner,
-      ),
-      daysPerWeek: o['daysPerWeek'] as int? ?? 3,
-      sessionMinutes: o['sessionMinutes'] as int? ?? 60,
-      excludedMuscles: (o['excludedMuscles'] as List<dynamic>? ?? [])
-          .cast<String>()
-          .toSet(),
-      priorityMuscles: (o['priorityMuscles'] as List<dynamic>? ?? [])
-          .cast<String>()
-          .toSet(),
-      excludedExerciseIds: (o['excludedExerciseIds'] as List<dynamic>? ?? [])
-          .cast<int>()
-          .toSet(),
-      priorityExerciseIds: (o['priorityExerciseIds'] as List<dynamic>? ?? [])
-          .cast<int>()
-          .toSet(),
-      equipment: (o['equipment'] as List<dynamic>? ?? [])
-          .cast<String>()
-          .toSet(),
-      autoPrioritize: o['autoPrioritize'] as bool? ?? true,
-    ),
-    days: days,
-    priorities: (json['priorities'] as List<dynamic>? ?? []).cast<String>(),
-    warnings: (json['warnings'] as List<dynamic>? ?? []).cast<String>(),
-    plannedWeeklySets: (json['plannedWeeklySets'] as Map? ?? {}).map(
-      (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
-    ),
-  );
-}
 
 class ProgramGeneratorScreen extends ConsumerStatefulWidget {
   const ProgramGeneratorScreen({super.key});
@@ -187,7 +93,7 @@ class _ProgramGeneratorScreenState
       final savedProgram = prefs.getString('savedTrainingProgram');
       if (savedProgram != null) {
         try {
-          _program = _programFromMap(
+          _program = programFromMap(
             jsonDecode(savedProgram) as Map<String, dynamic>,
           );
           _editingProgram = false;
@@ -325,7 +231,7 @@ class _ProgramGeneratorScreenState
       final programPrefs = await SharedPreferences.getInstance();
       await programPrefs.setString(
         'savedTrainingProgram',
-        jsonEncode(_programToMap(generated)),
+        jsonEncode(programToMap(generated)),
       );
       await programPrefs.setStringList('programCompletedDays', <String>[]);
       if (!mounted) return;
@@ -623,7 +529,7 @@ class _ProgramGeneratorScreenState
     final updatedPrefs = await SharedPreferences.getInstance();
     await updatedPrefs.setString(
       'savedTrainingProgram',
-      jsonEncode(_programToMap(updatedProgram)),
+      jsonEncode(programToMap(updatedProgram)),
     );
     if (!mounted) return;
     setState(() => _program = updatedProgram);
@@ -671,6 +577,26 @@ class _ProgramGeneratorScreenState
               .whereType<int>()
               .toSet();
     });
+  }
+
+  Future<void> _openCustomEditor() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => CustomProgramScreen(initial: _program)),
+    );
+    if (saved != true || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('savedTrainingProgram');
+    if (raw == null) return;
+    try {
+      final program = programFromMap(jsonDecode(raw) as Map<String, dynamic>);
+      if (!mounted) return;
+      setState(() {
+        _program = program;
+        _completedDays = {};
+        _editingProgram = false;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -857,6 +783,12 @@ class _ProgramGeneratorScreenState
                           : 'Сгенерировать программу',
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _openCustomEditor,
+                    icon: const Icon(Icons.edit_note_rounded),
+                    label: const Text('Создать свою программу'),
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -914,6 +846,11 @@ class _ProgramGeneratorScreenState
                 letterSpacing: -0.8,
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Редактировать упражнения',
+            onPressed: _openCustomEditor,
+            icon: const Icon(Icons.edit_note_rounded, color: Pal.ice),
           ),
           IconButton(
             tooltip: 'Изменить программу',
