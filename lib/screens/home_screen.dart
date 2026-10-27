@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'exercise_library_screen.dart';
+import 'custom_program_screen.dart';
 import 'program_generator_screen.dart';
 import '../format.dart';
 import '../logic/summaries.dart';
@@ -56,6 +57,16 @@ class HomeScreen extends ConsumerWidget {
                 MaterialPageRoute(
                   builder: (_) => const ExerciseLibraryScreen(),
                 ),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Создать свою программу',
+            icon: const Icon(Icons.edit_calendar_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CustomProgramScreen()),
               );
             },
           ),
