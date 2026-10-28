@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/app_database.dart';
 import '../logic/muscle_groups.dart';
 import '../ui/mini_body.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 import 'exercise_picker_screen.dart' show CatalogItem, catalogProvider;
 
@@ -70,7 +71,7 @@ class _ProgramExercisePickerScreenState
   @override
   Widget build(BuildContext context) {
     final catalog = ref.watch(catalogProvider);
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -91,7 +92,7 @@ class _ProgramExercisePickerScreenState
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: TextField(
               controller: _search,
               decoration: const InputDecoration(
@@ -102,15 +103,15 @@ class _ProgramExercisePickerScreenState
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
             child: Row(
               children: [
                 _legend(
-                  const Color(0xFFFF5B65),
+                  const Color(0xFFFF453A),
                   'Исключить ${_excluded.length}',
                 ),
                 const SizedBox(width: 12),
-                _legend(const Color(0xFF49D18D), 'Упор ${_priority.length}'),
+                _legend(const Color(0xFF30D158), 'Упор ${_priority.length}'),
               ],
             ),
           ),
@@ -139,7 +140,7 @@ class _ProgramExercisePickerScreenState
         ],
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        minimum: const EdgeInsets.fromLTRB(20, 8, 20, 12),
         child: FilledButton(
           onPressed: _save,
           child: Text(
@@ -171,7 +172,7 @@ class _ProgramExercisePickerScreenState
 
   Widget _groupGrid(List<CatalogItem> items) => GridView.count(
     crossAxisCount: 3,
-    padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
     mainAxisSpacing: 10,
     crossAxisSpacing: 10,
     childAspectRatio: 0.8,
@@ -179,13 +180,13 @@ class _ProgramExercisePickerScreenState
       for (final group in muscleGroups)
         Material(
           color: Pal.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             onTap: () => setState(() => _group = group),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Pal.line),
               ),
               child: Column(
@@ -209,7 +210,7 @@ class _ProgramExercisePickerScreenState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
                     ),
@@ -218,7 +219,7 @@ class _ProgramExercisePickerScreenState
                     '${items.where((item) => primaryMuscleGroup(item.shareMap)?.name == group.name).length} упр.',
                     style: const TextStyle(color: Pal.dim, fontSize: 11),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -236,26 +237,26 @@ class _ProgramExercisePickerScreenState
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = items[index];
         final id = item.exercise.id;
         final excluded = _excluded.contains(id);
         final priority = _priority.contains(id);
         final border = excluded
-            ? const Color(0xFFFF5B65)
+            ? const Color(0xFFFF453A)
             : priority
-            ? const Color(0xFF49D18D)
+            ? const Color(0xFF30D158)
             : Pal.line;
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: excluded
-                ? const Color(0x22FF5B65)
+                ? const Color(0x22FF453A)
                 : priority
-                ? const Color(0x1F49D18D)
+                ? const Color(0x1F30D158)
                 : Pal.surface,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: border,
               width: excluded || priority ? 1.5 : 1,
@@ -267,8 +268,8 @@ class _ProgramExercisePickerScreenState
               Text(
                 item.exercise.name,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
               ),
               const SizedBox(height: 5),
@@ -281,18 +282,18 @@ class _ProgramExercisePickerScreenState
                     .join(' · '),
                 style: const TextStyle(color: Pal.dim, fontSize: 11),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFFF5B65),
+                        foregroundColor: const Color(0xFFFF453A),
                         side: BorderSide(
-                          color: excluded ? const Color(0xFFFF5B65) : Pal.line,
+                          color: excluded ? const Color(0xFFFF453A) : Pal.line,
                         ),
                         backgroundColor: excluded
-                            ? const Color(0x22FF5B65)
+                            ? const Color(0x22FF453A)
                             : Colors.transparent,
                       ),
                       onPressed: () => _toggleExcluded(id),
@@ -309,12 +310,12 @@ class _ProgramExercisePickerScreenState
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF49D18D),
+                        foregroundColor: const Color(0xFF30D158),
                         side: BorderSide(
-                          color: priority ? const Color(0xFF49D18D) : Pal.line,
+                          color: priority ? const Color(0xFF30D158) : Pal.line,
                         ),
                         backgroundColor: priority
-                            ? const Color(0x1F49D18D)
+                            ? const Color(0x1F30D158)
                             : Colors.transparent,
                       ),
                       onPressed: () => _togglePriority(id),

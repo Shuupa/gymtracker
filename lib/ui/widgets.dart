@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'glass.dart';
 import 'theme.dart';
 
 Future<bool> confirmDialog(
@@ -7,30 +8,114 @@ Future<bool> confirmDialog(
   required String title,
   String? text,
   String ok = 'Удалить',
+  bool destructive = true,
 }) async {
   final result = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      icon: const Icon(Icons.warning_amber_rounded, color: Pal.hot, size: 28),
-      title: Text(title),
-      content: text == null ? null : Text(text),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Отмена', style: TextStyle(color: Pal.dim)),
+    barrierColor: const Color(0x66000000),
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 44, vertical: 24),
+      child: Glass(
+        radius: 28,
+        blur: 30,
+        tint: const Color(0xE61C1C1E),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Pal.text,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (text != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Pal.dim,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Container(height: 0.5, color: Pal.line),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _DialogAction(
+                      label: 'Отмена',
+                      color: Pal.accent,
+                      onTap: () => Navigator.pop(ctx, false),
+                    ),
+                  ),
+                  Container(width: 0.5, color: Pal.line),
+                  Expanded(
+                    child: _DialogAction(
+                      label: ok,
+                      color: destructive ? Pal.hot : Pal.accent,
+                      bold: true,
+                      onTap: () => Navigator.pop(ctx, true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Pal.hot,
-            foregroundColor: const Color(0xFF20090C),
-          ),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: Text(ok),
-        ),
-      ],
+      ),
     ),
   );
   return result ?? false;
+}
+
+class _DialogAction extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool bold;
+  final VoidCallback onTap;
+
+  const _DialogAction({
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.bold = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: SizedBox(
+        height: 52,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 17,
+              fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Метрический тайл. Красивее за счёт мягкого градиента и более чистой иерархии.
@@ -44,7 +129,7 @@ class StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = accent ?? Pal.ice;
+    final color = accent ?? Pal.accent;
     return Expanded(
       child: Container(
         constraints: const BoxConstraints(minHeight: 82),
@@ -53,9 +138,9 @@ class StatTile extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1A2435), Color(0xFF101822)],
+            colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Pal.line.withValues(alpha: 0.9)),
         ),
         child: Column(
@@ -64,7 +149,7 @@ class StatTile extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Icon(icon, size: 16, color: color),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
             ],
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -74,8 +159,8 @@ class StatTile extends StatelessWidget {
                 maxLines: 1,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Pal.text,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 19,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
                   letterSpacing: -0.4,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
@@ -102,7 +187,7 @@ class StatTile extends StatelessWidget {
 class Pill extends StatelessWidget {
   final String text;
   final Color color;
-  const Pill(this.text, {super.key, this.color = Pal.ice});
+  const Pill(this.text, {super.key, this.color = Pal.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +210,7 @@ class Pill extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -148,8 +233,8 @@ class SectionTitle extends StatelessWidget {
             style: const TextStyle(
               color: Pal.dim,
               fontSize: 11,
-              letterSpacing: 1.6,
-              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -186,11 +271,11 @@ class ArcPanel extends StatelessWidget {
             ? const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1A2435), Color(0xFF0E1420)],
+                colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
               )
             : null,
         color: gradient ? null : Pal.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: accent?.withValues(alpha: 0.5) ?? Pal.line,
           width: 1,
@@ -203,7 +288,7 @@ class ArcPanel extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: content,
       ),
     );
@@ -238,34 +323,34 @@ class EmptyState extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1A2435), Color(0xFF0E1420)],
+                colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Pal.line),
               boxShadow: [
                 BoxShadow(
-                  color: Pal.ice.withValues(alpha: 0.08),
+                  color: Pal.accent.withValues(alpha: 0.08),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
               ],
             ),
-            child: Icon(icon, size: 32, color: Pal.ice),
+            child: Icon(icon, size: 32, color: Pal.accent),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           Text(
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             subtitle,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: Pal.dim),
           ),
-          if (action != null) ...[const SizedBox(height: 20), action!],
+          if (action != null) ...[const SizedBox(height: 24), action!],
         ],
       ),
     ),

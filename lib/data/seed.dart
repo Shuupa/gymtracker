@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart' show Value;
+
 import 'app_database.dart';
 
 const muscleNames = [
@@ -485,9 +487,10 @@ const seedExercises = [
   }),
 ];
 
-/// Добавляет недостающие мышцы и упражнения (по названию). Безопасна для
-/// новой и существующей базы. Чтобы добавить упражнения: допиши их в список
-/// и увеличь schemaVersion на 1.
+/// Приводит каталог упражнений к списку [seedExercises] (по названию).
+/// Добавляет недостающие упражнения и исправляет доли мышц и инвентарь у уже
+/// существующих. Свои упражнения пользователя (которых нет в seed) не трогает.
+/// Безопасна для новой и существующей базы, вызывается при каждом запуске.
 Future<void> syncSeed(AppDatabase db) async {
   await db.transaction(() async {
     final ids = <String, int>{};
@@ -502,26 +505,63 @@ Future<void> syncSeed(AppDatabase db) async {
       }
     }
 
-    final existing = (await db.select(db.exercises).get())
-        .map((e) => e.name)
-        .toSet();
-    for (final e in seedExercises) {
-      if (existing.contains(e.name)) continue;
-      final exId = await db
-          .into(db.exercises)
-          .insert(
-            ExercisesCompanion.insert(name: e.name, equipment: e.equipment),
-          );
+    final byName = {
+      for (final e in await db.select(db.exercises).get()) e.name: e,
+    };
+    final linksByExercise = <int, Map<int, double>>{};
+    for (final l in await db.select(db.exerciseMuscles).get()) {
+      (linksByExercise[l.exerciseId] ??= {})[l.muscleId] = l.share;
+    }
+
+    Future<void> writeLinks(int exerciseId, SeedExercise e) async {
       for (final entry in e.muscles.entries) {
         await db
             .into(db.exerciseMuscles)
             .insert(
               ExerciseMusclesCompanion.insert(
-                exerciseId: exId,
+                exerciseId: exerciseId,
                 muscleId: ids[entry.key]!,
                 share: entry.value,
               ),
             );
+      }
+    }
+
+    for (final e in seedExercises) {
+      final row = byName[e.name];
+
+      if (row == null) {
+        final exId = await db
+            .into(db.exercises)
+            .insert(
+              ExercisesCompanion.insert(name: e.name, equipment: e.equipment),
+            );
+        await writeLinks(exId, e);
+        continue;
+      }
+
+      if (row.equipment != e.equipment) {
+        await (db.update(db.exercises)..where((t) => t.id.equals(row.id)))
+            .write(ExercisesCompanion(equipment: Value(e.equipment)));
+      }
+
+      final wanted = {for (final m in e.muscles.entries) ids[m.key]!: m.value};
+      final current = linksByExercise[row.id] ?? const <int, double>{};
+      var same = wanted.length == current.length;
+      if (same) {
+        for (final entry in wanted.entries) {
+          final value = current[entry.key];
+          if (value == null || (value - entry.value).abs() > 1e-6) {
+            same = false;
+            break;
+          }
+        }
+      }
+      if (!same) {
+        await (db.delete(
+          db.exerciseMuscles,
+        )..where((t) => t.exerciseId.equals(row.id))).go();
+        await writeLinks(row.id, e);
       }
     }
   });

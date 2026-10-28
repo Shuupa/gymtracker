@@ -49,15 +49,15 @@ class _MiniPainter extends CustomPainter {
         final Color fill;
         final Color stroke;
         if (hl) {
-          fill = Pal.ice.withValues(alpha: 0.9);
-          stroke = Pal.ice;
+          fill = Pal.accent.withValues(alpha: 0.9);
+          stroke = Pal.accent;
         } else {
           fill = switch (sh.kind) {
-            BodyKind.muscle => const Color(0xFF161E29),
-            BodyKind.hair => const Color(0xFF05080C),
-            _ => const Color(0xFF0A0E14),
+            BodyKind.muscle => const Color(0xFF1C1C1E),
+            BodyKind.hair => const Color(0xFF050506),
+            _ => const Color(0xFF0A0A0A),
           };
-          stroke = const Color(0xFF2E3D52);
+          stroke = const Color(0xFF38383A);
         }
         paintBodyShape(
           canvas,

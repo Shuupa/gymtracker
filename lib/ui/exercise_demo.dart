@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'exercise_demo_data.dart';
 import 'theme.dart';
 
-const _bg = Color(0xFF0E141C);
-const _figure = Color(0xFFE2EEFA);
-const _torso = Color(0xFF96ACC6);
-const _far = Color(0xFF607490);
-const _eq = Color(0xFF78889E);
-const _eq2 = Color(0xFF4E5C70);
-const _floor = Color(0xFF34425A);
+const _bg = Color(0xFF0A0A0A);
+const _figure = Color(0xFFECECEE);
+const _torso = Color(0xFF98989D);
+const _far = Color(0xFF636366);
+const _eq = Color(0xFF8E8E93);
+const _eq2 = Color(0xFF48484A);
+const _floor = Color(0xFF3A3A3C);
 
 /// Анимированная схема выполнения упражнения: фигурка плавно движется между
 /// начальной и конечной позой, рядом оборудование, работающая зона подсвечена.
@@ -46,11 +46,11 @@ class _ExerciseDemoState extends State<ExerciseDemo>
       width: double.infinity,
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: RepaintBoundary(
           child: CustomPaint(painter: _DemoPainter(data, _c)),
         ),
@@ -67,7 +67,7 @@ class _DemoPainter extends CustomPainter {
   static const _g = 100.0; // уровень пола
 
   Color _tone(int t) => switch (t) {
-    1 => Pal.ember,
+    1 => Pal.accent,
     2 => _eq2,
     3 => _figure,
     _ => _eq,
@@ -184,7 +184,7 @@ class _DemoPainter extends CustomPainter {
     seg(pts[7], pts[8], 4.2, _figure);
 
     // подсветка работающей зоны
-    final glow = Pal.ember.withValues(alpha: 0.58);
+    final glow = Pal.accent.withValues(alpha: 0.58);
     for (final fo in d.focus) {
       if (fo[0] == 0) {
         final pa = pts[fo[1].toInt()], pb = pts[fo[2].toInt()];
@@ -211,7 +211,7 @@ class _DemoPainter extends CustomPainter {
       } else if (pr.k == 8) {
         final c = pts[v[0].toInt() == 0 ? 15 : 16];
         paint
-          ..color = Pal.ember
+          ..color = Pal.accent
           ..strokeWidth = 3 * sc;
         canvas.drawCircle(c, v[1] * sc, paint);
       }

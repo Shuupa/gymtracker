@@ -1,15 +1,14 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/app_database.dart';
 import '../logic/muscle_strength.dart';
-import '../logic/program_codec.dart';
 import '../logic/program_generator.dart';
+import '../logic/program_library.dart';
 import '../providers.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
+import '../ui/widgets.dart';
 import 'exercise_picker_screen.dart';
 
 // ---------- шаблон: Full Body на 3 дня ----------
@@ -109,10 +108,21 @@ double _setCredit(double share) {
 
 /// Редактор собственной программы. Сохраняет результат в тот же ключ
 /// `savedTrainingProgram`, что и генератор, поэтому просмотр программы и запуск
-/// тренировок работают без изменений. Возвращает `true`, если программа сохранена.
+/// тренировок работают без изменений. Каждая программа сохраняется в библиотеку
+/// под своим названием. Возвращает `true`, если программа сохранена.
 class CustomProgramScreen extends ConsumerStatefulWidget {
   final GeneratedProgram? initial;
-  const CustomProgramScreen({super.key, this.initial});
+
+  /// Id и название записи библиотеки, если редактируется уже сохранённая программа.
+  final String? savedId;
+  final String? savedName;
+
+  const CustomProgramScreen({
+    super.key,
+    this.initial,
+    this.savedId,
+    this.savedName,
+  });
 
   @override
   ConsumerState<CustomProgramScreen> createState() =>
@@ -120,6 +130,7 @@ class CustomProgramScreen extends ConsumerStatefulWidget {
 }
 
 class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
+  final TextEditingController _name = TextEditingController();
   final List<_DayDraft> _days = [];
   List<MuscleLink> _links = [];
   bool _loading = true;
@@ -133,6 +144,7 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
 
   @override
   void dispose() {
+    _name.dispose();
     for (final d in _days) {
       d.title.dispose();
     }
@@ -144,6 +156,7 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
     if (!mounted) return;
     setState(() {
       _links = links;
+      _name.text = widget.savedName ?? 'Моя программа';
       final p = widget.initial;
       if (p != null) {
         for (final day in p.days) {
@@ -225,13 +238,9 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
     var repMax = e.repMax;
     var rest = e.rest;
 
-    final saved = await showModalBottomSheet<bool>(
+    final saved = await showGlassSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Pal.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => SafeArea(
           child: Padding(
@@ -249,11 +258,11 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
                   e.name,
                   style: const TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 _StepperRow(
                   label: 'Подходы',
                   value: '$sets',
@@ -292,7 +301,7 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
                   onPlus: () =>
                       setSheet(() => rest = _clampInt(rest + 15, 15, 420)),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -344,26 +353,14 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
   Future<void> _loadTemplate() async {
     final hasContent = _days.any((d) => d.exercises.isNotEmpty);
     if (hasContent) {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Заменить текущую программу?'),
-          content: const Text(
-            'Шаблон Full Body заменит дни и упражнения, которые ты уже добавил.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Отмена'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Заменить'),
-            ),
-          ],
-        ),
+      final ok = await confirmDialog(
+        context,
+        title: 'Заменить текущую программу?',
+        text: 'Шаблон Full Body заменит дни и упражнения, которые ты уже добавил.',
+        ok: 'Заменить',
+        destructive: false,
       );
-      if (ok != true || !mounted) return;
+      if (!ok || !mounted) return;
     }
 
     final db = ref.read(dbProvider);
@@ -478,12 +475,24 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
 
     setState(() => _saving = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        'savedTrainingProgram',
-        jsonEncode(programToMap(program)),
+      final name = _name.text.trim().isEmpty
+          ? 'Моя программа'
+          : _name.text.trim();
+      final entry = SavedProgram(
+        id: widget.savedId ?? newProgramId(),
+        name: name,
+        program: program,
+        updatedAt: DateTime.now(),
       );
-      await prefs.setStringList('programCompletedDays', <String>[]);
+      final activeId = await activeProgramId();
+      await upsertProgram(entry);
+      if (widget.savedId == null) {
+        await activateProgram(
+          entry,
+        ); // новая программа сразу становится текущей
+      } else if (activeId == entry.id) {
+        await activateProgram(entry, resetProgress: false);
+      }
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (error) {
@@ -499,10 +508,12 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const GlassScaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
         title: const Text('Своя программа'),
         actions: [
@@ -522,16 +533,25 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
+          TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Название программы',
+              hintText: 'Например: Тяжёлая неделя, Делоад, Лёгкая',
+            ),
+          ),
+          const SizedBox(height: 18),
           for (var i = 0; i < _days.length; i++) _dayCard(i),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _addDay,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Добавить день'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: _saving ? null : _save,
             icon: const Icon(Icons.check_rounded),
@@ -549,7 +569,7 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
       padding: const EdgeInsets.fromLTRB(14, 8, 6, 10),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: Column(
@@ -561,8 +581,8 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
                 child: TextField(
                   controller: day.title,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: -0.4,
                   ),
                   decoration: const InputDecoration(
@@ -595,7 +615,7 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Пока пусто. Добавь первое упражнение.',
-                style: TextStyle(color: Pal.dim, fontSize: 14),
+                style: TextStyle(color: Pal.dim, fontSize: 15),
               ),
             ),
           for (var j = 0; j < day.exercises.length; j++) _exerciseRow(day, j),
@@ -623,7 +643,7 @@ class _CustomProgramScreenState extends ConsumerState<CustomProgramScreen> {
       onTap: () => _editExercise(e),
       title: Text(
         e.name,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
       ),
       subtitle: Text(
         '${e.focus} · ${e.sets} × $reps · отдых ${e.rest} с',
@@ -687,7 +707,7 @@ class _StepperRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
             ),
           ),
           IconButton(

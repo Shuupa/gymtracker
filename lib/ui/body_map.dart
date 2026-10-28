@@ -8,10 +8,10 @@ import 'body_data.dart';
 const bodyViewW = 400.0; // два тела по 200 рядом: спереди (0) и сзади (1)
 const bodyViewH = 440.0;
 
-const _outline = Color(0xFF9FB6CC);
-const _neutralFill = Color(0xFF151C27);
-const _emptyMuscle = Color(0xFF232E3D);
-const _hairFill = Color(0xFF0B1017);
+const _outline = Color(0xFF98989D);
+const _neutralFill = Color(0xFF1C1C1E);
+const _emptyMuscle = Color(0xFF2C2C2E);
+const _hairFill = Color(0xFF0A0A0A);
 const _grooveColor = Color(0x70000000);
 const _faceColor = Color(0xCCE8EEF5);
 

@@ -7,6 +7,7 @@ import '../data/exercise_descriptions.dart';
 import '../format.dart';
 import '../logic/muscle_groups.dart';
 import '../ui/mini_body.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 import 'exercise_picker_screen.dart';
 
@@ -25,7 +26,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   Widget build(BuildContext context) {
     final catalog = ref.watch(catalogProvider);
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
         title: const Text('Библиотека упражнений'),
         actions: [
@@ -71,16 +72,16 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       onSelected: (_) => setState(
                         () => _selectedGroup = selected ? null : group,
                       ),
-                      selectedColor: Pal.purple.withValues(alpha: 0.25),
+                      selectedColor: Pal.accent.withValues(alpha: 0.25),
                       labelStyle: TextStyle(
-                        color: selected ? Pal.purple : Pal.dim,
+                        color: selected ? Pal.accent : Pal.dim,
                         fontWeight: selected
-                            ? FontWeight.w800
+                            ? FontWeight.w600
                             : FontWeight.w600,
                         fontSize: 13,
                       ),
                       side: BorderSide(
-                        color: selected ? Pal.purple : Pal.line,
+                        color: selected ? Pal.accent : Pal.line,
                         width: 1.5,
                       ),
                     );
@@ -93,11 +94,11 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                     ? const Center(
                         child: Text(
                           'В этой группе нет упражнений',
-                          style: TextStyle(color: Pal.dim, fontSize: 16),
+                          style: TextStyle(color: Pal.dim, fontSize: 17),
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final item = filtered[index];
@@ -118,7 +119,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
                               color: Pal.surface,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(18),
                               border: Border.all(color: Pal.line),
                             ),
                             child: Padding(
@@ -158,8 +159,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                             Text(
                                               item.exercise.name,
                                               style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w800,
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w600,
                                                 letterSpacing: -0.4,
                                               ),
                                             ),
@@ -173,9 +174,10 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                                         vertical: 4,
                                                       ),
                                                   decoration: BoxDecoration(
-                                                    color: Pal.ice.withValues(
-                                                      alpha: 0.15,
-                                                    ),
+                                                    color: Pal.accent
+                                                        .withValues(
+                                                          alpha: 0.15,
+                                                        ),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           8,
@@ -187,9 +189,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                                     ),
                                                     style: const TextStyle(
                                                       fontSize: 12,
-                                                      color: Pal.ice,
+                                                      color: Pal.accent,
                                                       fontWeight:
-                                                          FontWeight.w700,
+                                                          FontWeight.w600,
                                                     ),
                                                   ),
                                                 ),
@@ -205,11 +207,11 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(height: 12),
+                                            const SizedBox(height: 16),
                                             Text(
                                               description,
                                               style: const TextStyle(
-                                                fontSize: 14,
+                                                fontSize: 15,
                                                 height: 1.45,
                                                 color: Pal.dimLight,
                                               ),
@@ -219,9 +221,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 20),
                                   ExerciseDemo(name: item.exercise.name),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 20),
                                   Wrap(
                                     spacing: 8,
                                     runSpacing: 8,

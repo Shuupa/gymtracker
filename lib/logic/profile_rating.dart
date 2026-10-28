@@ -162,6 +162,44 @@ double calculateBodyRating({
   );
 }
 
+/// Положение на лестнице рангов (шкала релиза: 0…2200 Elo).
+class EloStanding {
+  final int elo;
+  final int rankIndex;
+
+  /// Прогресс внутри текущего ранга, 0..1.
+  final double tierProgress;
+
+  /// Сколько Elo осталось до следующего ранга; null на максимальном.
+  final int? pointsToNext;
+
+  const EloStanding({
+    required this.elo,
+    required this.rankIndex,
+    required this.tierProgress,
+    required this.pointsToNext,
+  });
+
+  GymRank get rank => gymRanks[rankIndex];
+  GymRank? get nextRank =>
+      rankIndex + 1 < gymRanks.length ? gymRanks[rankIndex + 1] : null;
+}
+
+EloStanding eloStanding(num elo) {
+  final value = elo < 0 ? 0.0 : elo.toDouble();
+  final index = rankIndexForElo(value);
+  final isLast = index == gymRanks.length - 1;
+  final lo = gymRanks[index].minElo;
+  final hi = isLast ? eliteEloThreshold : gymRanks[index + 1].minElo;
+  final progress = hi == lo ? 1.0 : ((value - lo) / (hi - lo)).clamp(0.0, 1.0);
+  return EloStanding(
+    elo: value.round(),
+    rankIndex: index,
+    tierProgress: progress.toDouble(),
+    pointsToNext: isLast ? null : (hi - value).round(),
+  );
+}
+
 double? calculateBmi({required double? weightKg, required double? heightCm}) {
   if (weightKg == null || heightCm == null || weightKg <= 0 || heightCm <= 0) {
     return null;

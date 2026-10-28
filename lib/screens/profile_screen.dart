@@ -18,8 +18,10 @@ import '../logic/working_sets.dart';
 import '../providers.dart';
 import '../ui/body_map.dart';
 import '../ui/levels.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 import '../ui/widgets.dart';
+import '../widgets/elo_orb.dart';
 import 'exercise_progress_screen.dart';
 import 'program_generator_screen.dart';
 
@@ -256,10 +258,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       selected.addAll(sorted.take(3).map((entry) => entry.key));
     }
 
-    await showModalBottomSheet<void>(
+    await showGlassSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Pal.surface,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -276,8 +277,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: Text(
                               'Избранные упражнения',
                               style: TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -311,11 +312,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             child: Material(
                               color: isSelected
-                                  ? Pal.ice.withValues(alpha: 0.10)
+                                  ? Pal.accent.withValues(alpha: 0.10)
                                   : Pal.bg,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                               child: InkWell(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                                 onTap: () {
                                   setSheetState(() {
                                     if (isSelected) {
@@ -331,9 +332,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isSelected ? Pal.ice : Pal.line,
+                                      color: isSelected ? Pal.accent : Pal.line,
                                     ),
                                   ),
                                   child: Row(
@@ -349,7 +350,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         ),
                                         child: const Icon(
                                           Icons.fitness_center_rounded,
-                                          color: Pal.ice,
+                                          color: Pal.accent,
                                           size: 19,
                                         ),
                                       ),
@@ -359,7 +360,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           exercise.name,
                                           style: const TextStyle(
                                             fontSize: 13,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                       ),
@@ -368,7 +369,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         isSelected
                                             ? Icons.check_circle_rounded
                                             : Icons.add_circle_outline_rounded,
-                                        color: isSelected ? Pal.ice : Pal.dim,
+                                        color: isSelected
+                                            ? Pal.accent
+                                            : Pal.dim,
                                       ),
                                     ],
                                   ),
@@ -414,13 +417,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final workoutsAsync = ref.watch(workoutsProvider);
 
     if (!_loaded) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const GlassScaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(title: const Text('Профиль')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 36),
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 36),
         children: [
           FutureBuilder<Map<String, MuscleResult>>(
             future: _scoresFuture,
@@ -439,9 +444,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           const _SavedProgramCard(),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           workoutsAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
@@ -459,7 +464,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             actionLabel: 'Выбрать упражнения',
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           exercisesAsync.when(
             loading: () => const _LoadingPanel(),
             error: (error, _) =>
@@ -519,7 +524,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           const SizedBox(height: 26),
           const _SectionHeading(title: 'Мышечная карта', trailing: 'ПО СИЛЕ'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           FutureBuilder<Map<String, MuscleResult>>(
             future: _scoresFuture,
             builder: (context, snapshot) {
@@ -547,7 +552,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           const SizedBox(height: 26),
           const _SectionHeading(title: 'Все упражнения', trailing: 'ИСТОРИЯ'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           exercisesAsync.when(
             loading: () => const _LoadingPanel(),
             error: (error, _) =>
@@ -574,13 +579,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           const SizedBox(height: 28),
           const Divider(color: Pal.line),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
               const Expanded(
                 child: Text(
                   'Параметры тела',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                 ),
               ),
               TextButton.icon(
@@ -604,7 +609,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Pal.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Pal.line),
               ),
               child: Wrap(
@@ -623,7 +628,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
           if (_editingMeasurements) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             _MeasurementsPanel(
               weightCtrl: _weightCtrl,
               heightCtrl: _heightCtrl,
@@ -656,101 +661,87 @@ class _FitnessRating extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Оцениваем всё тело: группы без данных остаются нулевыми,
-    // а не исчезают из среднего и не завышают рейтинг.
+    // Группы без данных остаются нулевыми и не завышают рейтинг.
     final allScores = muscleNames
         .map((name) => (scores[name]?.score ?? 0.0).clamp(0.0, 1.0))
         .toList();
     final average = allScores.isEmpty
         ? 0.0
         : allScores.reduce((a, b) => a + b) / allScores.length;
-    // Elo 0…2200+
-    final elo = (average * 2200).roundToDouble();
-    final rankIndex = rankIndexForElo(elo).clamp(0, gymRanks.length - 1);
-    final rank = gymRanks[rankIndex];
+    // Elo 0…2200+, как в релизе: среднее по группам × порог элиты.
+    final standing = eloStanding(average * eliteEloThreshold);
+    final next = standing.nextRank;
     final ranking = scores.entries.toList()
       ..sort((a, b) => a.value.score.compareTo(b.value.score));
     final strongest = ranking.reversed.take(3).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Pal.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Pal.line),
-      ),
+    return LiquidGlass(
+      radius: 32,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'РЕЙТИНГ ВСЕГО ТЕЛА',
+            'Рейтинг',
             style: TextStyle(
               color: Pal.dim,
-              fontSize: 11,
-              letterSpacing: 1.8,
-              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              _GymRankBadge(rankIndex: rankIndex, size: 92),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      rank.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${elo.toStringAsFixed(0)} Elo · ${rank.description}',
-                      style: const TextStyle(
-                        color: Pal.ice,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(5),
-                      child: LinearProgressIndicator(
-                        value: average.clamp(0.0, 1.0),
-                        minHeight: 7,
-                        backgroundColor: Pal.surface2,
-                        color: Pal.ice,
-                      ),
-                    ),
-                  ],
-                ),
+          const SizedBox(height: 20),
+          Center(
+            child: EloOrb(
+              elo: standing.elo,
+              tierProgress: standing.tierProgress,
+              color: Color(standing.rank.color.value),
+              size: 216,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Center(
+            child: Text(
+              standing.rank.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 14),
-          Text(
-            scores.isEmpty
-                ? 'Рейтинг предварительный: нужны завершённые тренировки с рабочими подходами.'
-                : 'Оценка рассчитывается по всем ${muscleNames.length} мышечным группам. '
-                      'Группы без истории пока считаются неразвитыми в рамках индекса.',
-            style: const TextStyle(color: Pal.dim, fontSize: 11, height: 1.45),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              next == null
+                  ? 'Максимальное звание'
+                  : 'До ${next.title} осталось ${standing.pointsToNext} Elo',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Pal.dim, fontSize: 15),
+            ),
           ),
+          if (scores.isEmpty) ...[
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Нужны завершённые тренировки с рабочими подходами.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Pal.dim, fontSize: 13),
+              ),
+            ),
+          ],
           if (strongest.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            const Divider(color: Pal.line, height: 1),
-            const SizedBox(height: 14),
+            const SizedBox(height: 24),
+            Container(height: 0.5, color: Pal.line),
+            const SizedBox(height: 20),
             const Text(
               'Сильнейшие группы',
-              style: TextStyle(color: Pal.dim, fontSize: 11),
+              style: TextStyle(color: Pal.dim, fontSize: 13),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             for (final entry in strongest)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
                     Expanded(
@@ -758,29 +749,33 @@ class _FitnessRating extends StatelessWidget {
                         entry.key,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 15),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     SizedBox(
-                      width: 100,
+                      width: 72,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(5),
                         child: LinearProgressIndicator(
                           value: entry.value.score.clamp(0.0, 1.0),
                           minHeight: 5,
-                          backgroundColor: Pal.surface2,
+                          backgroundColor: Pal.surface3,
                           color: levelColor(entry.value.score),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     SizedBox(
-                      width: 36,
+                      width: 44,
                       child: Text(
-                        '${(entry.value.score * 100).toStringAsFixed(1)}%',
+                        '${muscleScoreToElo(entry.value.score).round()}',
                         textAlign: TextAlign.right,
-                        style: const TextStyle(fontSize: 10, color: Pal.dim),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Pal.dimLight,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -825,7 +820,7 @@ class _GymRankPainter extends CustomPainter {
       t,
     )!;
 
-    canvas.drawCircle(center, radius, Paint()..color = const Color(0xFF171D25));
+    canvas.drawCircle(center, radius, Paint()..color = const Color(0xFF1C1C1E));
     canvas.drawCircle(
       center,
       radius,
@@ -928,7 +923,7 @@ class _MeasurementsPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: Column(
@@ -952,7 +947,7 @@ class _MeasurementsPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -971,7 +966,7 @@ class _MeasurementsPanel extends StatelessWidget {
                       'Пол для нормативов',
                       style: TextStyle(color: Pal.dim, fontSize: 11),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: SegmentedButton<bool>(
@@ -991,7 +986,7 @@ class _MeasurementsPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -1009,7 +1004,7 @@ class _MeasurementsPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -1017,11 +1012,11 @@ class _MeasurementsPanel extends StatelessWidget {
               child: Text(saving ? 'Сохранение…' : 'Сохранить параметры'),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           const Text(
             'Безжировая масса рассчитывается только при указанном проценте жира. '
             'ИМТ — справочный показатель и не оценивает состав тела.',
-            style: TextStyle(color: Pal.dim, fontSize: 10, height: 1.4),
+            style: TextStyle(color: Pal.dim, fontSize: 11, height: 1.4),
           ),
         ],
       ),
@@ -1062,18 +1057,18 @@ class _BodyMetric extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Pal.surface2,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Pal.dim, fontSize: 10)),
+          Text(label, style: const TextStyle(color: Pal.dim, fontSize: 11)),
           const SizedBox(height: 5),
           Text(
             value,
             style: const TextStyle(
               color: Pal.text,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 15,
             ),
           ),
@@ -1115,14 +1110,14 @@ class _MuscleProfile extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Pal.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Pal.line),
           ),
           child: BodyMap(colors: colors, onMuscleTap: onSelect),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         const LevelLegend(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         _MuscleInfo(
           name: selectedMuscle,
           result: selectedMuscle == null ? null : scores[selectedMuscle],
@@ -1174,13 +1169,13 @@ class _MuscleInfo extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: muscle == null
           ? Text(
               '$name: нет данных',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1191,7 +1186,7 @@ class _MuscleInfo extends StatelessWidget {
                       child: Text(
                         name!,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           fontSize: 17,
                         ),
                       ),
@@ -1202,9 +1197,9 @@ class _MuscleInfo extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: muscle.score.clamp(0.0, 1.0),
                     minHeight: 7,
@@ -1212,7 +1207,7 @@ class _MuscleInfo extends StatelessWidget {
                     color: levelColor(muscle.score),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 const Text(
                   'Упражнения, влияющие на оценку',
                   style: TextStyle(color: Pal.dim, fontSize: 11),
@@ -1228,7 +1223,7 @@ class _MuscleInfo extends StatelessWidget {
                           levelName(source.score),
                           style: TextStyle(
                             color: levelColor(source.score),
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -1258,7 +1253,7 @@ class _MuscleRow extends StatelessWidget {
           ),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: result.score.clamp(0.0, 1.0),
                 minHeight: 7,
@@ -1274,7 +1269,7 @@ class _MuscleRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: TextStyle(
                 color: levelColor(result.score),
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
             ),
@@ -1304,14 +1299,14 @@ class _FavoriteExerciseCard extends ConsumerWidget {
 
     return Material(
       color: Pal.surface,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Pal.line),
           ),
           child: Column(
@@ -1323,29 +1318,32 @@ class _FavoriteExerciseCard extends ConsumerWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: Pal.ice.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(11),
+                      color: Pal.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.show_chart_rounded, color: Pal.ice),
+                    child: const Icon(
+                      Icons.show_chart_rounded,
+                      color: Pal.accent,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       exercise.name,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   IconButton(
                     tooltip: 'Убрать из избранного',
                     onPressed: onRemove,
-                    icon: const Icon(Icons.star_rounded, color: Pal.ice),
+                    icon: const Icon(Icons.star_rounded, color: Pal.accent),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               history.when(
                 loading: () => const SizedBox(
                   height: 56,
@@ -1436,13 +1434,13 @@ class _FavoriteExerciseCard extends ConsumerWidget {
                               valueColor: sessions.length < 2
                                   ? Pal.dim
                                   : percent >= 0
-                                  ? Pal.ice
+                                  ? Pal.accent
                                   : Pal.hot,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
                       SizedBox(
                         height: 82,
                         child: spots.length < 2
@@ -1501,18 +1499,20 @@ class _FavoriteExerciseCard extends ConsumerWidget {
                                       spots: spots,
                                       isCurved: true,
                                       barWidth: 2.5,
-                                      color: Pal.ice,
+                                      color: Pal.accent,
                                       dotData: const FlDotData(show: false),
                                       belowBarData: BarAreaData(
                                         show: true,
-                                        color: Pal.ice.withValues(alpha: 0.08),
+                                        color: Pal.accent.withValues(
+                                          alpha: 0.08,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       const Row(
                         children: [
                           Icon(
@@ -1593,24 +1593,24 @@ class _ExerciseHistoryEntry extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Material(
             color: Pal.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 13,
                 ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Pal.line),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.show_chart_rounded,
-                      color: Pal.ice,
+                      color: Pal.accent,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -1645,7 +1645,7 @@ class _ExerciseHistoryEntry extends ConsumerWidget {
                       style: const TextStyle(
                         color: Pal.text,
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1677,7 +1677,7 @@ class _MiniMetric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Pal.dim, fontSize: 10)),
+        Text(label, style: const TextStyle(color: Pal.dim, fontSize: 11)),
         const SizedBox(height: 5),
         Text(
           value,
@@ -1685,8 +1685,8 @@ class _MiniMetric extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: valueColor ?? Pal.text,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -1716,7 +1716,7 @@ class _SectionHeading extends StatelessWidget {
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontSize: 17,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
             ),
           ),
@@ -1728,8 +1728,8 @@ class _SectionHeading extends StatelessWidget {
             trailing,
             style: const TextStyle(
               color: Pal.dim,
-              fontSize: 10,
-              letterSpacing: 0.8,
+              fontSize: 11,
+              letterSpacing: 0,
             ),
           ),
       ],
@@ -1760,7 +1760,7 @@ class _ErrorPanel extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Pal.line),
       ),
       child: Text(text, style: const TextStyle(color: Pal.hot, fontSize: 12)),
@@ -1787,7 +1787,7 @@ class _EmptyPanel extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: Column(
@@ -1797,8 +1797,8 @@ class _EmptyPanel extends StatelessWidget {
             title,
             style: const TextStyle(
               color: Pal.text,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 5),
@@ -1807,7 +1807,7 @@ class _EmptyPanel extends StatelessWidget {
             style: const TextStyle(color: Pal.dim, fontSize: 12, height: 1.4),
           ),
           if (action != null && onTap != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             OutlinedButton(onPressed: onTap, child: Text(action!)),
           ],
         ],
@@ -1831,9 +1831,9 @@ class _SavedProgramCard extends StatelessWidget {
         if (raw == null || raw.isEmpty) {
           return Material(
             color: Pal.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1843,12 +1843,16 @@ class _SavedProgramCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Pal.line),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.auto_awesome_rounded, color: Pal.ice, size: 28),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Pal.accent,
+                      size: 28,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -1857,8 +1861,8 @@ class _SavedProgramCard extends StatelessWidget {
                           Text(
                             'Персональная программа',
                             style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -1902,9 +1906,9 @@ class _SavedProgramCard extends StatelessWidget {
 
         return Material(
           color: Pal.surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           child: InkWell(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ProgramGeneratorScreen()),
@@ -1912,7 +1916,7 @@ class _SavedProgramCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Pal.line),
               ),
               child: Row(
@@ -1921,12 +1925,12 @@ class _SavedProgramCard extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0x1F49D18D),
-                      borderRadius: BorderRadius.circular(13),
+                      color: const Color(0x1F30D158),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.calendar_month_rounded,
-                      color: Color(0xFF49D18D),
+                      color: Color(0xFF30D158),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1937,8 +1941,8 @@ class _SavedProgramCard extends StatelessWidget {
                         const Text(
                           'Моя программа',
                           style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1950,9 +1954,9 @@ class _SavedProgramCard extends StatelessWidget {
                         Text(
                           'Закрыто ${completed.length} из ${days.length} тренировок',
                           style: const TextStyle(
-                            color: Color(0xFF49D18D),
+                            color: Color(0xFF30D158),
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -2006,7 +2010,7 @@ class _AttendanceHeatmap extends StatelessWidget {
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: Column(
@@ -2017,7 +2021,7 @@ class _AttendanceHeatmap extends StatelessWidget {
               const Expanded(
                 child: Text(
                   'Посещения зала',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
               Text(
@@ -2061,10 +2065,10 @@ class _AttendanceHeatmap extends StatelessWidget {
                 DateTime(now.year, now.month, now.day),
               );
               final color = attended
-                  ? const Color(0xFF49D18D)
+                  ? const Color(0xFF30D158)
                   : future
                   ? Pal.surface2
-                  : const Color(0xFF454D58);
+                  : const Color(0xFF48484A);
               return Tooltip(
                 message:
                     '$day ${monthNames[now.month - 1]}${attended ? ' · тренировка' : ''}',
@@ -2077,26 +2081,26 @@ class _AttendanceHeatmap extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           Row(
             children: [
               const Text(
                 'Нет тренировки',
-                style: TextStyle(color: Pal.dim, fontSize: 10),
+                style: TextStyle(color: Pal.dim, fontSize: 11),
               ),
               const Spacer(),
               Container(
                 width: 9,
                 height: 9,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF49D18D),
+                  color: const Color(0xFF30D158),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 5),
               const Text(
                 'Был в зале',
-                style: TextStyle(color: Pal.dim, fontSize: 10),
+                style: TextStyle(color: Pal.dim, fontSize: 11),
               ),
             ],
           ),

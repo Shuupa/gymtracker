@@ -12,6 +12,7 @@ import '../format.dart';
 import '../logic/one_rm.dart';
 import '../logic/report.dart';
 import '../providers.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 import '../ui/widgets.dart';
 import 'exercise_picker_screen.dart';
@@ -87,12 +88,12 @@ class WorkoutScreen extends ConsumerWidget {
     final workout = ref.watch(workoutProvider(workoutId)).value;
     final finished = workout?.finishedAt != null;
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Тренировка'),
+            const Text('Тренировка', style: TextStyle(fontSize: 22)),
             if (workout != null)
               _Elapsed(start: workout.startedAt, end: workout.finishedAt),
           ],
@@ -100,7 +101,7 @@ class WorkoutScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Как выполнять упражнения?',
-            icon: const Icon(Icons.help_outline_rounded, color: Pal.ember),
+            icon: const Icon(Icons.help_outline_rounded, color: Pal.accent),
             onPressed: () {
               Navigator.push(
                 context,
@@ -124,7 +125,7 @@ class WorkoutScreen extends ConsumerWidget {
                   onPressed: () => _finish(context, ref),
                   child: const Text(
                     'Завершить',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                 ),
         ],
@@ -142,16 +143,16 @@ class WorkoutScreen extends ConsumerWidget {
                       height: 72,
                       decoration: BoxDecoration(
                         color: Pal.surface2,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Pal.line),
                       ),
                       child: const Icon(
                         Icons.fitness_center,
                         size: 32,
-                        color: Pal.ice,
+                        color: Pal.accent,
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 22),
                     const Text(
                       'Добавь первое упражнение',
                       style: TextStyle(
@@ -160,7 +161,7 @@ class WorkoutScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                     FilledButton.icon(
                       onPressed: () => _pickExercise(context, ref),
                       icon: const Icon(Icons.add),
@@ -170,7 +171,7 @@ class WorkoutScreen extends ConsumerWidget {
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 124),
                 children: [
                   for (final it in list)
                     ExerciseCard(
@@ -182,11 +183,11 @@ class WorkoutScreen extends ConsumerWidget {
                 ],
               ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: GlassFab(
         icon: const Icon(Icons.add),
         label: const Text(
           'Упражнение',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         onPressed: () => _pickExercise(context, ref),
       ),
@@ -339,9 +340,9 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF161F2E), Color(0xFF0C121C)],
+          colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: Padding(
@@ -355,7 +356,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   child: Text(
                     widget.exercise.name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       fontSize: 15,
                       letterSpacing: -0.2,
                     ),
@@ -397,7 +398,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 ),
                 decoration: BoxDecoration(
                   color: Pal.success.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: Pal.success.withValues(alpha: 0.35),
                   ),
@@ -416,7 +417,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         style: const TextStyle(
                           color: Pal.success,
                           fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -448,21 +449,21 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                             ),
                             decoration: BoxDecoration(
                               color: Pal.surface2,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '${fmtNum(s.weight)}×${s.reps}',
                               style: const TextStyle(
                                 fontSize: 11,
-                                color: Pal.ice,
-                                fontWeight: FontWeight.w700,
+                                color: Pal.accent,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                       ],
                     ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: Column(
@@ -478,7 +479,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         decoration: BoxDecoration(
                           color: Pal.hot.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
                           Icons.delete_outline,
@@ -497,7 +498,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: Row(
@@ -526,7 +527,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: Row(
@@ -540,13 +541,20 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   Expanded(
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 46),
+                        minimumSize: const Size(0, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
                       onPressed: () => _add(sets),
                       icon: const Icon(Icons.check, size: 18),
                       label: Text(
                         _warmup ? 'Записать разминку' : 'Записать подход',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -585,10 +593,10 @@ class _SetRow extends StatelessWidget {
     final est = set.isWarmup ? 0.0 : oneRm(load, set.reps);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
         color: Pal.surface2,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
@@ -597,15 +605,17 @@ class _SetRow extends StatelessWidget {
             height: 26,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: set.isWarmup ? Pal.cold.withValues(alpha: 0.5) : Pal.ice,
-              borderRadius: BorderRadius.circular(8),
+              color: set.isWarmup
+                  ? Pal.steel.withValues(alpha: 0.5)
+                  : Pal.accent,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: set.isWarmup ? Pal.text : const Color(0xFF07111C),
+                fontWeight: FontWeight.w600,
+                color: set.isWarmup ? Pal.text : const Color(0xFFFFFFFF),
               ),
             ),
           ),
@@ -615,7 +625,7 @@ class _SetRow extends StatelessWidget {
               equipment == 'bodyweight' && set.weight <= 0
                   ? 'Собств. вес (~${fmtNum(load)} кг) × ${set.reps}'
                   : '${fmtNum(set.weight)} кг × ${set.reps}',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
             ),
           ),
           if (est > 0)
@@ -649,41 +659,57 @@ class _Stepper extends StatelessWidget {
       minimumSize: const Size(36, 36),
       padding: EdgeInsets.zero,
       backgroundColor: Pal.surface2,
-      foregroundColor: Pal.ice,
+      foregroundColor: Pal.accent,
     );
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IconButton(
-          style: btn,
-          onPressed: onMinus,
-          icon: const Icon(Icons.remove, size: 18),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            textAlign: TextAlign.center,
-            keyboardType: decimal
-                ? const TextInputType.numberWithOptions(decimal: true)
-                : TextInputType.number,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-            decoration: InputDecoration(
-              labelText: label,
-              hintText: '0',
-              isDense: true,
-              floatingLabelAlignment: FloatingLabelAlignment.center,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 12,
-              ),
-            ),
+        // Подпись над полем: в узком поле она обрезалась до «В…».
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Pal.dim, fontSize: 12),
           ),
         ),
-        const SizedBox(width: 4),
-        IconButton(
-          style: btn,
-          onPressed: onPlus,
-          icon: const Icon(Icons.add, size: 18),
+        Row(
+          children: [
+            IconButton(
+              style: btn,
+              onPressed: onMinus,
+              icon: const Icon(Icons.remove, size: 18),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: decimal
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : TextInputType.number,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: const InputDecoration(
+                  hintText: '0',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              style: btn,
+              onPressed: onPlus,
+              icon: const Icon(Icons.add, size: 18),
+            ),
+          ],
         ),
       ],
     );

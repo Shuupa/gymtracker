@@ -40,7 +40,7 @@ class _GymRankPainter extends CustomPainter {
     )!;
 
     final backgroundPaint = Paint()
-      ..color = const Color(0xFF171D25)
+      ..color = const Color(0xFF1C1C1E)
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()

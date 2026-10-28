@@ -6,6 +6,7 @@ import '../format.dart';
 import '../logic/muscle_groups.dart';
 import '../providers.dart';
 import '../ui/mini_body.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 
 class CatalogItem {
@@ -75,7 +76,7 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
-      child: Scaffold(
+      child: GlassScaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
@@ -86,7 +87,7 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: TextField(
                 controller: _search,
                 decoration: const InputDecoration(
@@ -149,7 +150,7 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
   Widget _grid(List<CatalogItem> items) {
     return GridView.count(
       crossAxisCount: 3,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
       childAspectRatio: 0.78,
@@ -157,13 +158,13 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
         for (final group in muscleGroups)
           Material(
             color: Pal.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               onTap: () => setState(() => _group = group),
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Pal.line),
                 ),
                 child: Column(
@@ -188,7 +189,7 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
                       ),
@@ -197,7 +198,7 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                       '${items.where((item) => primaryMuscleGroup(item.shareMap)?.name == group.name).length} упр.',
                       style: const TextStyle(color: Pal.dim, fontSize: 11),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                   ],
                 ),
               ),
@@ -212,12 +213,12 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
       return const Center(
         child: Text(
           'Ничего не найдено',
-          style: TextStyle(color: Pal.dim, fontSize: 16),
+          style: TextStyle(color: Pal.dim, fontSize: 17),
         ),
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       itemCount: items.length,
       itemBuilder: (_, index) {
         final item = items[index];
@@ -229,14 +230,14 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
           padding: const EdgeInsets.only(bottom: 12),
           child: Material(
             color: Pal.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
               onTap: () => Navigator.pop(context, item.exercise.id),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Pal.line),
                 ),
                 child: Row(
@@ -247,7 +248,7 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                       height: 85,
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       padding: const EdgeInsets.all(4),
                       child: MiniBody(
@@ -264,8 +265,8 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                           Text(
                             item.exercise.name,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 17,
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -276,19 +277,19 @@ class _PickerState extends ConsumerState<ExercisePickerScreen> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: Pal.ice.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
+                              color: Pal.accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               equipmentRu(item.exercise.equipment),
                               style: const TextStyle(
-                                color: Pal.ice,
+                                color: Pal.accent,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 14),
                           _MuscleShares(item: item, group: group),
                         ],
                       ),
@@ -321,12 +322,12 @@ class _MuscleShares extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: (group != null && group!.muscles.contains(entry.key))
-                  ? Pal.purple.withValues(alpha: 0.2)
+                  ? Pal.accent.withValues(alpha: 0.2)
                   : Pal.surface2,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: (group != null && group!.muscles.contains(entry.key))
-                    ? Pal.purple.withValues(alpha: 0.5)
+                    ? Pal.accent.withValues(alpha: 0.5)
                     : Colors.transparent,
               ),
             ),
@@ -334,10 +335,10 @@ class _MuscleShares extends StatelessWidget {
               '${entry.key} ${(entry.value * 100).round()}%',
               style: TextStyle(
                 color: (group != null && group!.muscles.contains(entry.key))
-                    ? Pal.purple
+                    ? Pal.accent
                     : Pal.dimLight,
                 fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

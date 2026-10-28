@@ -5,6 +5,7 @@ import '../format.dart';
 import '../logic/report.dart';
 import '../providers.dart';
 import '../ui/body_map.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 import '../ui/widgets.dart';
 import 'workout_screen.dart';
@@ -36,7 +37,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(reportProvider(widget.workoutId));
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
         title: const Text('Итоги'),
         actions: [
@@ -82,12 +83,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     final sel = _selected;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
         Text(
           fmtDay(w.startedAt),
           style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.6),
+              ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.2),
         ),
         const SizedBox(height: 2),
         Row(
@@ -100,7 +101,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Row(
           children: [
             StatTile('${r.exercises.length}', 'упражнений'),
@@ -108,7 +109,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             StatTile('${r.setCount}', 'подходов'),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Row(
           children: [
             StatTile(fmtVolume(r.volume), 'тоннаж'),
@@ -132,7 +133,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Pal.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Pal.line),
             ),
             child: BodyMap(
@@ -140,7 +141,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               onMuscleTap: (m) => setState(() => _selected = m),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Center(
             child: sel == null
                 ? const Row(
@@ -165,7 +166,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: Pal.surface2,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Pal.line),
                     ),
                     child: Text(
@@ -173,15 +174,15 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                           ? '$sel: не работала'
                           : '$sel · ${load[sel]!.toStringAsFixed(1)} эфф. подходов',
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
                     ),
                   ),
           ),
-          const SizedBox(height: 12),
-          const _HeatBar(),
           const SizedBox(height: 16),
+          const _HeatBar(),
+          const SizedBox(height: 20),
           for (final e in ranking)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
@@ -200,7 +201,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                   Expanded(
                     flex: 5,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: maxLoad == 0 ? 0 : e.value / maxLoad,
                         minHeight: 7,
@@ -236,9 +237,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF161F2E), Color(0xFF0C121C)],
+                colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
               ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Pal.line),
             ),
             child: Column(
@@ -250,7 +251,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                       child: Text(
                         ex.exercise.name,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           fontSize: 15,
                           letterSpacing: -0.2,
                         ),
@@ -264,7 +265,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: Pal.hot.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Pal.hot.withValues(alpha: 0.3),
                           ),
@@ -273,14 +274,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                           '1RM ≈ ${fmtNum((ex.best1rm * 10).round() / 10)}',
                           style: const TextStyle(
                             color: Pal.hot,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             fontSize: 11,
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
@@ -293,20 +294,20 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: Pal.surface2,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Pal.line),
                         ),
                         child: Text(
                           '${fmtNum(s.weight)}×${s.reps}',
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     const Icon(
@@ -338,7 +339,7 @@ class _HeatBar extends StatelessWidget {
         Container(
           height: 8,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             gradient: LinearGradient(
               colors: [for (var i = 0; i <= 10; i++) heatColor(0.2 + 0.08 * i)],
             ),
@@ -350,9 +351,9 @@ class _HeatBar extends StatelessWidget {
           children: [
             Text(
               'меньше нагрузки',
-              style: TextStyle(color: Pal.dim, fontSize: 10),
+              style: TextStyle(color: Pal.dim, fontSize: 11),
             ),
-            Text('больше', style: TextStyle(color: Pal.dim, fontSize: 10)),
+            Text('больше', style: TextStyle(color: Pal.dim, fontSize: 11)),
           ],
         ),
       ],

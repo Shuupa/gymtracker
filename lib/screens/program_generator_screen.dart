@@ -9,10 +9,13 @@ import '../data/seed.dart';
 import '../logic/muscle_strength.dart';
 import '../logic/program_codec.dart';
 import '../logic/program_generator.dart';
+import '../logic/program_library.dart';
 import '../logic/working_sets.dart';
 import '../providers.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
-import 'custom_program_screen.dart';
+import 'custom_programs_screen.dart';
+import 'my_program_screen.dart';
 import 'exercise_picker_screen.dart';
 import 'program_exercise_picker_screen.dart';
 import 'workout_screen.dart';
@@ -234,6 +237,7 @@ class _ProgramGeneratorScreenState
         jsonEncode(programToMap(generated)),
       );
       await programPrefs.setStringList('programCompletedDays', <String>[]);
+      await clearActiveProgramId();
       if (!mounted) return;
       setState(() {
         _program = generated;
@@ -330,13 +334,9 @@ class _ProgramGeneratorScreenState
     if (!mounted) return;
 
     // НОВЫЙ КРАСИВЫЙ ДИАЛОГ ЗАМЕНЫ (BottomSheet)
-    final selectedId = await showModalBottomSheet<int>(
+    final selectedId = await showGlassSheet<int>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Pal.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (sheetContext) {
         return SafeArea(
           child: SizedBox(
@@ -352,8 +352,8 @@ class _ProgramGeneratorScreenState
                           'Подходящие замены',
                           style: TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
                           ),
                         ),
                       ),
@@ -370,18 +370,18 @@ class _ProgramGeneratorScreenState
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Вместо: ${current.name}',
-                      style: const TextStyle(color: Pal.dim, fontSize: 14),
+                      style: const TextStyle(color: Pal.dim, fontSize: 15),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Expanded(
                   child: candidates.isEmpty
                       ? const Center(
                           child: Text(
                             'Нет подходящих замен\nдля этой группы мышц',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Pal.dim, fontSize: 16),
+                            style: TextStyle(color: Pal.dim, fontSize: 17),
                           ),
                         )
                       : ListView.builder(
@@ -401,7 +401,7 @@ class _ProgramGeneratorScreenState
                               margin: const EdgeInsets.only(bottom: 10),
                               decoration: BoxDecoration(
                                 color: Pal.surface,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                                 border: Border.all(color: Pal.line),
                               ),
                               child: ListTile(
@@ -412,8 +412,8 @@ class _ProgramGeneratorScreenState
                                 title: Text(
                                   exercise.name,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 17,
                                     letterSpacing: -0.2,
                                   ),
                                 ),
@@ -423,7 +423,7 @@ class _ProgramGeneratorScreenState
                                         child: Text(
                                           tags.join(' · '),
                                           style: const TextStyle(
-                                            color: Pal.ice,
+                                            color: Pal.accent,
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -579,15 +579,41 @@ class _ProgramGeneratorScreenState
     });
   }
 
-  Future<void> _openCustomEditor() async {
+  Future<void> _openCustomEditor({bool createNew = false}) async {
+    SavedProgram? current;
+    if (!createNew) {
+      final id = await activeProgramId();
+      if (id != null) {
+        final library = await loadProgramLibrary();
+        current = library.where((p) => p.id == id).firstOrNull;
+      }
+    }
+    if (!mounted) return;
     final saved = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => CustomProgramScreen(initial: _program)),
+      MaterialPageRoute(
+        builder: (_) => CustomProgramScreen(
+          initial: createNew ? null : _program,
+          savedId: current?.id,
+          savedName: current?.name,
+        ),
+      ),
     );
-    if (saved != true || !mounted) return;
+    if (saved == true) await _reloadSavedProgram();
+  }
+
+  Future<void> _openMyPrograms() async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const MyProgramsScreen()),
+    );
+    if (changed == true) await _reloadSavedProgram();
+  }
+
+  Future<void> _reloadSavedProgram() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('savedTrainingProgram');
-    if (raw == null) return;
+    if (raw == null || !mounted) return;
     try {
       final program = programFromMap(jsonDecode(raw) as Map<String, dynamic>);
       if (!mounted) return;
@@ -603,17 +629,19 @@ class _ProgramGeneratorScreenState
   Widget build(BuildContext context) {
     final exercisesAsync = ref.watch(exercisesProvider);
     if (_loadingSettings) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const GlassScaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(title: const Text('Генератор программы')),
       body: exercisesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>
             Center(child: Text('Не удалось загрузить упражнения: $error')),
         data: (exercises) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: _program != null && !_editingProgram
               ? _savedProgramChildren(exercises)
               : [
@@ -741,13 +769,13 @@ class _ProgramGeneratorScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     title: const Text(
                       'Автоматически находить отстающие группы',
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
                     ),
@@ -759,7 +787,7 @@ class _ProgramGeneratorScreenState
                     onChanged: (value) =>
                         setState(() => _autoPrioritize = value),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => _pickExercisePreferences(exercises),
                     icon: const Icon(Icons.tune_rounded),
@@ -783,19 +811,25 @@ class _ProgramGeneratorScreenState
                           : 'Сгенерировать программу',
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   OutlinedButton.icon(
-                    onPressed: _openCustomEditor,
+                    onPressed: () => _openCustomEditor(createNew: true),
                     icon: const Icon(Icons.edit_note_rounded),
                     label: const Text('Создать свою программу'),
                   ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: _openMyPrograms,
+                    icon: const Icon(Icons.folder_open_rounded),
+                    label: const Text('Мои программы'),
+                  ),
                   if (_error != null) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Pal.hot.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Pal.hot.withValues(alpha: 0.4),
                         ),
@@ -804,7 +838,7 @@ class _ProgramGeneratorScreenState
                         _error!,
                         style: const TextStyle(
                           color: Pal.hot,
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -841,29 +875,34 @@ class _ProgramGeneratorScreenState
             child: Text(
               'Твоя программа',
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
             ),
           ),
           IconButton(
+            tooltip: 'Мои программы',
+            onPressed: _openMyPrograms,
+            icon: const Icon(Icons.folder_open_rounded, color: Pal.accent),
+          ),
+          IconButton(
             tooltip: 'Редактировать упражнения',
             onPressed: _openCustomEditor,
-            icon: const Icon(Icons.edit_note_rounded, color: Pal.ice),
+            icon: const Icon(Icons.edit_note_rounded, color: Pal.accent),
           ),
           IconButton(
             tooltip: 'Изменить программу',
             onPressed: () => setState(() => _editingProgram = true),
-            icon: const Icon(Icons.tune_rounded, color: Pal.ice),
+            icon: const Icon(Icons.tune_rounded, color: Pal.accent),
           ),
         ],
       ),
       Text(
         '${goalLabel(program.options.goal)} · ${program.options.daysPerWeek} тренировок в неделю · ${program.options.sessionMinutes} мин',
-        style: const TextStyle(color: Pal.dim, fontSize: 14),
+        style: const TextStyle(color: Pal.dim, fontSize: 15),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -872,10 +911,10 @@ class _ProgramGeneratorScreenState
             end: Alignment.bottomRight,
             colors: [
               Pal.success.withValues(alpha: 0.15),
-              const Color(0xFF0C121C),
+              const Color(0xFF1C1C1E),
             ],
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Pal.success.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -885,7 +924,7 @@ class _ProgramGeneratorScreenState
               height: 44,
               decoration: BoxDecoration(
                 color: Pal.success.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.check_circle_outline_rounded,
@@ -910,8 +949,8 @@ class _ProgramGeneratorScreenState
                   Text(
                     'Выполнено $completed из ${program.days.length}',
                     style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 17,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -922,25 +961,29 @@ class _ProgramGeneratorScreenState
         ),
       ),
       if (program.priorities.isNotEmpty) ...[
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: Pal.ice.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Pal.ice.withValues(alpha: 0.3)),
+            color: Pal.accent.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Pal.accent.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.trending_up_rounded, size: 18, color: Pal.ice),
+              const Icon(
+                Icons.trending_up_rounded,
+                size: 18,
+                color: Pal.accent,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Приоритет: ${program.priorities.join(', ')}',
                   style: const TextStyle(
-                    color: Pal.ice,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                    color: Pal.accent,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -948,11 +991,11 @@ class _ProgramGeneratorScreenState
           ),
         ),
       ],
-      const SizedBox(height: 20),
+      const SizedBox(height: 24),
       for (var i = 0; i < program.days.length; i++)
         _dayCard(program.days[i], i, exercises),
       if (program.warnings.isNotEmpty) ...[
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         for (final warning in program.warnings)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -979,14 +1022,15 @@ class _ProgramGeneratorScreenState
             ),
           ),
       ],
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _progressionCard(),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       OutlinedButton.icon(
         onPressed: () async {
           final prefs = await SharedPreferences.getInstance();
           await prefs.remove('savedTrainingProgram');
           await prefs.setStringList('programCompletedDays', <String>[]);
+          await clearActiveProgramId();
           if (!mounted) return;
           setState(() {
             _program = null;
@@ -1010,10 +1054,10 @@ class _ProgramGeneratorScreenState
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isCompleted
-              ? [Pal.success.withValues(alpha: 0.12), const Color(0xFF0C121C)]
-              : [const Color(0xFF18212E), const Color(0xFF0C121C)],
+              ? [Pal.success.withValues(alpha: 0.12), const Color(0xFF1C1C1E)]
+              : [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)],
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isCompleted ? Pal.success.withValues(alpha: 0.6) : Pal.line,
           width: 1.5,
@@ -1028,8 +1072,8 @@ class _ProgramGeneratorScreenState
                 child: Text(
                   day.title,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -1049,20 +1093,20 @@ class _ProgramGeneratorScreenState
                 ),
                 decoration: BoxDecoration(
                   color: Pal.surface2,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${day.exercises.length} упр.',
                   style: const TextStyle(
                     color: Pal.dim,
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           for (var i = 0; i < day.exercises.length; i++) ...[
             if (i > 0)
               Padding(
@@ -1080,16 +1124,18 @@ class _ProgramGeneratorScreenState
                   height: 32,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Pal.ice.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Pal.ice.withValues(alpha: 0.4)),
+                    color: Pal.accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Pal.accent.withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Text(
                     '${i + 1}',
                     style: const TextStyle(
-                      color: Pal.ice,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
+                      color: Pal.accent,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
                 ),
@@ -1101,8 +1147,8 @@ class _ProgramGeneratorScreenState
                       Text(
                         day.exercises[i].name,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 17,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -1113,15 +1159,15 @@ class _ProgramGeneratorScreenState
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Pal.ice.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          color: Pal.accent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${day.exercises[i].sets} × ${day.exercises[i].repMin}–${day.exercises[i].repMax} · отдых ${day.exercises[i].restSeconds} с',
                           style: const TextStyle(
-                            color: Pal.ice,
+                            color: Pal.accent,
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -1158,7 +1204,7 @@ class _ProgramGeneratorScreenState
               ],
             ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -1182,13 +1228,13 @@ class _ProgramGeneratorScreenState
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+        colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
       ),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       border: Border.all(color: Pal.line),
       boxShadow: [
         BoxShadow(
-          color: Pal.ice.withValues(alpha: 0.05),
+          color: Pal.accent.withValues(alpha: 0.05),
           blurRadius: 20,
           spreadRadius: 2,
         ),
@@ -1197,7 +1243,7 @@ class _ProgramGeneratorScreenState
     child: const Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.auto_awesome_rounded, color: Pal.ice, size: 28),
+        Icon(Icons.auto_awesome_rounded, color: Pal.accent, size: 28),
         SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -1206,17 +1252,17 @@ class _ProgramGeneratorScreenState
               Text(
                 'Программа под тебя',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: -0.3,
                 ),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 12),
               Text(
                 'Учитываются ограничения, оборудование, история тренировок и приоритетные мышцы. Программа остаётся повторяемой, чтобы можно было отслеживать прогресс.',
                 style: TextStyle(
                   color: Pal.dimLight,
-                  fontSize: 14,
+                  fontSize: 15,
                   height: 1.5,
                 ),
               ),
@@ -1231,7 +1277,7 @@ class _ProgramGeneratorScreenState
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
       color: Pal.surface,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       border: Border.all(color: Pal.line),
     ),
     child: const Column(
@@ -1240,25 +1286,25 @@ class _ProgramGeneratorScreenState
         Text(
           'Как прогрессировать',
           style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
             letterSpacing: -0.3,
           ),
         ),
-        SizedBox(height: 12),
+        SizedBox(height: 16),
         Text(
           '• Большинство подходов заканчивай с запасом примерно 1–3 повтора, не обязательно до отказа.',
-          style: TextStyle(color: Pal.dimLight, fontSize: 14, height: 1.5),
+          style: TextStyle(color: Pal.dimLight, fontSize: 15, height: 1.5),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 12),
         Text(
           '• Когда выполнишь верхнюю границу повторов во всех рабочих подходах с хорошей техникой на двух тренировках подряд, прибавь небольшой вес: обычно 2–5% для верха тела и 5–10% для низа.',
-          style: TextStyle(color: Pal.dimLight, fontSize: 14, height: 1.5),
+          style: TextStyle(color: Pal.dimLight, fontSize: 15, height: 1.5),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 12),
         Text(
           '• Если техника ломается, появляется боль или результат резко падает, не повышай нагрузку; уменьши вес или останови упражнение.',
-          style: TextStyle(color: Pal.dimLight, fontSize: 14, height: 1.5),
+          style: TextStyle(color: Pal.dimLight, fontSize: 15, height: 1.5),
         ),
       ],
     ),
@@ -1281,7 +1327,7 @@ class _Section extends StatelessWidget {
           title,
           style: const TextStyle(
             fontSize: 17,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             letterSpacing: -0.3,
           ),
         ),
@@ -1292,7 +1338,7 @@ class _Section extends StatelessWidget {
             style: const TextStyle(color: Pal.dim, fontSize: 13, height: 1.4),
           ),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         child,
       ],
     );

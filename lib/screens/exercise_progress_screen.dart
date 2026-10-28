@@ -7,6 +7,7 @@ import '../data/app_database.dart';
 import '../format.dart';
 import '../logic/one_rm.dart';
 import '../providers.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 
 class ExerciseProgressScreen extends ConsumerStatefulWidget {
@@ -38,7 +39,7 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
     final history = ref.watch(exerciseHistoryProvider(widget.exercise.id));
     final scheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(title: Text(widget.exercise.name)),
       body: history.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -75,7 +76,7 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Pal.surface2,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Pal.line),
                 ),
                 child: SegmentedButton<OneRmFormula>(
@@ -83,8 +84,8 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                   style: SegmentedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     side: BorderSide.none,
-                    selectedBackgroundColor: Pal.ice,
-                    selectedForegroundColor: const Color(0xFF07111C),
+                    selectedBackgroundColor: Pal.accent,
+                    selectedForegroundColor: const Color(0xFFFFFFFF),
                     foregroundColor: Pal.dim,
                   ),
                   segments: const [
@@ -109,15 +110,19 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                   onSelectionChanged: (s) => setState(() => _formula = s.first),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Row(
                 children: [
-                  _Stat('Макс. 1RM', '${fmtNum(_r(best))} кг', accent: Pal.ice),
+                  _Stat(
+                    'Макс. 1RM',
+                    '${fmtNum(_r(best))} кг',
+                    accent: Pal.accent,
+                  ),
                   const SizedBox(width: 8),
                   _Stat(
                     'Последняя',
                     '${fmtNum(_r(values.last))} кг',
-                    accent: Pal.cold,
+                    accent: Pal.steel,
                   ),
                   const SizedBox(width: 8),
                   _Stat(
@@ -133,20 +138,20 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'РАСЧЁТНЫЙ 1RM',
+                'Расчётный 1rm',
                 style: TextStyle(
                   color: Pal.dim,
                   fontSize: 11,
-                  letterSpacing: 1.6,
-                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
                 decoration: BoxDecoration(
                   color: Pal.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Pal.line),
                 ),
                 child: SizedBox(
@@ -210,8 +215,8 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      Pal.ice.withValues(alpha: 0.25),
-                                      Pal.ice.withValues(alpha: 0.0),
+                                      Pal.accent.withValues(alpha: 0.25),
+                                      Pal.accent.withValues(alpha: 0.0),
                                     ],
                                   ),
                                 ),
@@ -223,22 +228,22 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'ИСТОРИЯ',
+                'История',
                 style: TextStyle(
                   color: Pal.dim,
                   fontSize: 11,
-                  letterSpacing: 1.6,
-                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               for (final s in sessions.reversed)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Pal.surface,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Pal.line),
                   ),
                   child: Row(
@@ -251,7 +256,7 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                             Text(
                               fmtDate(s.date),
                               style: const TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
                             ),
@@ -274,15 +279,15 @@ class _State extends ConsumerState<ExerciseProgressScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Pal.ice.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Pal.accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'объём ${fmtNum(_r(s.effectiveVolume(bodyWeight: _bodyWeight, exerciseName: widget.exercise.name, equipment: widget.exercise.equipment)))}',
                           style: const TextStyle(
-                            color: Pal.ice,
+                            color: Pal.accent,
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -304,7 +309,7 @@ Widget _leftTitle(double value, TitleMeta meta) {
     padding: const EdgeInsets.only(right: 6),
     child: Text(
       value.toInt().toString(),
-      style: const TextStyle(color: Pal.dim, fontSize: 10),
+      style: const TextStyle(color: Pal.dim, fontSize: 11),
       textAlign: TextAlign.right,
     ),
   );
@@ -323,13 +328,13 @@ class _Stat extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           color: Pal.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Pal.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Pal.dim, fontSize: 10)),
+            Text(label, style: const TextStyle(color: Pal.dim, fontSize: 11)),
             const SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -339,8 +344,8 @@ class _Stat extends StatelessWidget {
                 maxLines: 1,
                 style: TextStyle(
                   color: accent,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
               ),
             ),

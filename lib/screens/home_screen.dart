@@ -6,6 +6,7 @@ import 'program_generator_screen.dart';
 import '../format.dart';
 import '../logic/summaries.dart';
 import '../providers.dart';
+import '../ui/glass.dart';
 import '../ui/theme.dart';
 import '../ui/widgets.dart';
 import 'profile_screen.dart';
@@ -43,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
     final result = ref.watch(workoutSummariesProvider);
     final db = ref.read(dbProvider);
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
         title: const Text('Обзор'),
         actions: [
@@ -138,7 +139,7 @@ class HomeScreen extends ConsumerWidget {
                   title: 'Текущая тренировка',
                   trailing: 'В ПРОЦЕССЕ',
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 for (final item in active)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -153,7 +154,7 @@ class HomeScreen extends ConsumerWidget {
                       },
                     ),
                   ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
               ],
 
               _SectionHeading(
@@ -179,7 +180,7 @@ class HomeScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: GlassFab(
         onPressed: () async {
           final id = await db.startWorkout();
           if (!context.mounted) return;
@@ -212,25 +213,8 @@ class _ActivityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A2A42), Color(0xFF0F1928)],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Pal.line),
-        boxShadow: [
-          BoxShadow(
-            color: Pal.ice.withValues(alpha: 0.06),
-            blurRadius: 24,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
+    return LiquidGlass(
+      radius: 32,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -240,12 +224,12 @@ class _ActivityPanel extends StatelessWidget {
               children: [
                 const Expanded(
                   child: Text(
-                    'АКТИВНОСТЬ',
+                    'Активность',
                     style: TextStyle(
                       color: Pal.dim,
                       fontSize: 11,
-                      letterSpacing: 1.8,
-                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -255,17 +239,19 @@ class _ActivityPanel extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: Pal.ice.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Pal.ice.withValues(alpha: 0.35)),
+                    color: Pal.accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Pal.accent.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: const Text(
-                    '7 ДНЕЙ',
+                    '7 дней',
                     style: TextStyle(
-                      color: Pal.ice,
-                      fontSize: 10,
-                      letterSpacing: 1,
-                      fontWeight: FontWeight.w800,
+                      color: Pal.accent,
+                      fontSize: 11,
+                      letterSpacing: 0,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -296,7 +282,7 @@ class _ActivityPanel extends StatelessWidget {
               ],
             ),
           ),
-          Container(height: 1, color: Pal.line.withValues(alpha: 0.7)),
+          Container(height: 0.5, color: Pal.line.withValues(alpha: 0.5)),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
             child: _WeekActivityChart(workouts: workouts),
@@ -320,28 +306,31 @@ class _MainMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            value,
-            maxLines: 1,
-            style: TextStyle(
-              color: Pal.text,
-              fontSize: compact ? 19 : 28,
-              height: 1.1,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-              fontFeatures: const [FontFeature.tabularFigures()],
+    return Padding(
+      padding: const EdgeInsets.only(right: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: Pal.text,
+                fontSize: compact ? 24 : 38,
+                height: 1.05,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(color: Pal.dim, fontSize: 11)),
-      ],
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(color: Pal.dim, fontSize: 12)),
+        ],
+      ),
     );
   }
 }
@@ -410,9 +399,9 @@ class _WeekActivityChart extends StatelessWidget {
                       child: Text(
                         hasWorkout ? '${mins}м' : '',
                         style: const TextStyle(
-                          color: Pal.ice,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                          color: Pal.accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -438,7 +427,7 @@ class _WeekActivityChart extends StatelessWidget {
                                 ? const LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: [Pal.ice, Pal.cold],
+                                    colors: [Pal.accent, Pal.accent],
                                   )
                                 : null,
                             color: hasWorkout ? null : Pal.line,
@@ -446,7 +435,7 @@ class _WeekActivityChart extends StatelessWidget {
                             boxShadow: hasWorkout
                                 ? [
                                     BoxShadow(
-                                      color: Pal.ice.withValues(alpha: 0.30),
+                                      color: Pal.accent.withValues(alpha: 0.30),
                                       blurRadius: 12,
                                       spreadRadius: 1,
                                     ),
@@ -461,9 +450,9 @@ class _WeekActivityChart extends StatelessWidget {
                   Text(
                     _weekdays[days[index].weekday - 1],
                     style: TextStyle(
-                      color: isToday ? Pal.ice : Pal.dim,
-                      fontSize: 9,
-                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+                      color: isToday ? Pal.accent : Pal.dim,
+                      fontSize: 11,
+                      fontWeight: isToday ? FontWeight.w600 : FontWeight.w500,
                       letterSpacing: 0.4,
                     ),
                   ),
@@ -493,7 +482,7 @@ class _SectionHeading extends StatelessWidget {
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontSize: 17,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
             ),
           ),
@@ -529,10 +518,10 @@ class _WorkoutCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           decoration: BoxDecoration(
@@ -540,12 +529,12 @@ class _WorkoutCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isActive
-                  ? [const Color(0xFF1A2A42), const Color(0xFF0F1928)]
-                  : [const Color(0xFF141C29), const Color(0xFF0C121C)],
+                  ? [const Color(0xFF14283F), const Color(0xFF1C1C1E)]
+                  : [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)],
             ),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isActive ? Pal.ice.withValues(alpha: 0.55) : Pal.line,
+              color: isActive ? Pal.accent.withValues(alpha: 0.55) : Pal.line,
             ),
           ),
           child: Column(
@@ -561,17 +550,17 @@ class _WorkoutCard extends StatelessWidget {
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Pal.ice, Pal.cold],
+                              colors: [Pal.accent, Pal.accent],
                             )
                           : null,
                       color: isActive ? null : Pal.surface2,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Icon(
                       isActive
                           ? Icons.fitness_center_rounded
                           : Icons.check_rounded,
-                      color: isActive ? const Color(0xFF07111C) : Pal.dim,
+                      color: isActive ? const Color(0xFFFFFFFF) : Pal.dim,
                       size: 20,
                     ),
                   ),
@@ -585,7 +574,7 @@ class _WorkoutCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Pal.text,
                             fontSize: 15,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: -0.2,
                           ),
                         ),
@@ -600,7 +589,7 @@ class _WorkoutCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (isActive) const Pill('Активна', color: Pal.ice),
+                  if (isActive) const Pill('Активна', color: Pal.accent),
                   PopupMenuButton<String>(
                     tooltip: 'Действия',
                     icon: const Icon(Icons.more_horiz_rounded, color: Pal.dim),
@@ -611,7 +600,7 @@ class _WorkoutCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Row(
                 children: [
                   _WorkoutValue(
@@ -632,8 +621,8 @@ class _WorkoutCard extends StatelessWidget {
               ),
               if (summary.exerciseNames.isNotEmpty) ...[
                 const SizedBox(height: 13),
-                Container(height: 1, color: Pal.line.withValues(alpha: 0.7)),
-                const SizedBox(height: 10),
+                Container(height: 0.5, color: Pal.line.withValues(alpha: 0.5)),
+                const SizedBox(height: 14),
                 Text(
                   summary.exerciseNames.join('  ·  '),
                   maxLines: 2,
@@ -671,13 +660,13 @@ class _WorkoutValue extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Pal.text,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Pal.dim, fontSize: 10)),
+          Text(label, style: const TextStyle(color: Pal.dim, fontSize: 11)),
         ],
       ),
     );
@@ -693,7 +682,7 @@ class _EmptyHistory extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       decoration: BoxDecoration(
         color: Pal.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Pal.line),
       ),
       child: const Row(
@@ -779,8 +768,8 @@ class _HistoryListState extends State<_HistoryList> {
                     ? 'Свернуть'
                     : 'Показать ещё (${widget.history.length - 3})',
                 style: const TextStyle(
-                  color: Pal.ice,
-                  fontWeight: FontWeight.w700,
+                  color: Pal.accent,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

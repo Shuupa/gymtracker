@@ -35,6 +35,9 @@ class AppDatabase extends _$AppDatabase {
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
+      // Каталог подтягивается при каждом запуске, а не только при смене версии
+      // схемы, поэтому новые упражнения появляются и в уже созданной базе.
+      if (!details.wasCreated) await syncSeed(this);
     },
   );
 
